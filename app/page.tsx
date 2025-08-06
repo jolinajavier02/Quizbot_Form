@@ -46,34 +46,6 @@ export default function QuizPage() {
   }
 
   const selectQuiz = (quiz: Quiz) => {
-    // Check if user has already submitted this quiz
-    const existingResults = localStorage.getItem('quizResults')
-    if (existingResults) {
-      const results = JSON.parse(existingResults)
-      const userResult = results.find((r: QuizResult) => 
-        r.quizId === quiz.id && r.userName === userName
-      )
-      
-      if (userResult) {
-        if (userResult.isApproved) {
-          // Show approved results
-          setResult(userResult)
-          setIsSubmitted(true)
-          setSelectedQuiz(quiz)
-          setQuestions(quiz.questions)
-          setQuizTitle(quiz.title)
-          setQuizDescription(quiz.description)
-          setCurrentView('quiz')
-          return
-        } else {
-          // Quiz submitted but not approved yet
-          alert('You have already submitted this quiz. Please wait for admin approval to view your results.')
-          return
-        }
-      }
-    }
-    
-    // Start new quiz
     setSelectedQuiz(quiz)
     setQuestions(quiz.questions)
     setQuizTitle(quiz.title)
@@ -399,7 +371,30 @@ export default function QuizPage() {
               />
             </div>
             <button
-              onClick={() => userName.trim() && setShowNameInput(false)}
+              onClick={() => {
+                if (userName.trim()) {
+                  // Check for existing submission
+                  const existingResults = JSON.parse(localStorage.getItem('quizResults') || '[]') as QuizResult[]
+                  const existingSubmission = existingResults.find(
+                    result => result.quizId === selectedQuiz?.id && result.userName.toLowerCase() === userName.trim().toLowerCase()
+                  )
+                  
+                  if (existingSubmission) {
+                    if (existingSubmission.isApproved) {
+                      // Show approved results
+                      setResult(existingSubmission)
+                      setIsSubmitted(true)
+                    } else {
+                      // Show pending message
+                      alert('Your quiz submission is pending admin approval. Please wait for the results to be reviewed.')
+                      backToLanding()
+                      return
+                    }
+                  }
+                  
+                  setShowNameInput(false)
+                }
+              }}
               disabled={!userName.trim()}
               className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
             >
