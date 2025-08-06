@@ -13,7 +13,7 @@ export default function LandingPage() {
             Welcome to <span className="text-blue-600">QuizBot</span>
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Test your knowledge with our interactive quiz platform. Take quizzes, track your progress, and challenge yourself with AI-generated questions.
+            Ready to test your knowledge? Challenge yourself with our comprehensive quiz platform and discover what you know!
           </p>
           <Link 
             href="/take-quiz"
@@ -24,36 +24,51 @@ export default function LandingPage() {
           </Link>
         </div>
 
-        {/* Features Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-          <div className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-shadow duration-200">
-            <div className="flex items-center justify-center w-16 h-16 bg-blue-100 rounded-lg mb-6 mx-auto">
-              <BookOpen className="w-8 h-8 text-blue-600" />
+        {/* About Section */}
+        <div className="bg-white rounded-2xl p-12 shadow-xl mb-16">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">About QuizBot</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">What is QuizBot?</h3>
+                <p className="text-gray-600 mb-6">
+                  QuizBot is an innovative quiz platform designed to make learning engaging and effective. Our system provides interactive quizzes with instant feedback, helping users test their knowledge across various topics.
+                </p>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">Key Features</h3>
+                <ul className="text-gray-600 space-y-2">
+                  <li>• Interactive multiple-choice questions</li>
+                  <li>• Instant scoring and detailed feedback</li>
+                  <li>• Admin dashboard for quiz management</li>
+                  <li>• User-friendly interface</li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">How It Works</h3>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm">1</div>
+                    <div>
+                      <h4 className="font-medium text-gray-900">Choose a Quiz</h4>
+                      <p className="text-gray-600 text-sm">Browse available quizzes and select one that interests you</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm">2</div>
+                    <div>
+                      <h4 className="font-medium text-gray-900">Answer Questions</h4>
+                      <p className="text-gray-600 text-sm">Work through multiple-choice questions at your own pace</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm">3</div>
+                    <div>
+                      <h4 className="font-medium text-gray-900">Get Results</h4>
+                      <p className="text-gray-600 text-sm">Receive instant feedback and see your performance</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-4 text-center">Multiple Choice Questions</h3>
-            <p className="text-gray-600 text-center">
-              Engage with carefully crafted multiple-choice questions designed to test your knowledge effectively.
-            </p>
-          </div>
-
-          <div className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-shadow duration-200">
-            <div className="flex items-center justify-center w-16 h-16 bg-green-100 rounded-lg mb-6 mx-auto">
-              <Trophy className="w-8 h-8 text-green-600" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-4 text-center">Instant Results</h3>
-            <p className="text-gray-600 text-center">
-              Get immediate feedback on your performance with detailed results and explanations for each question.
-            </p>
-          </div>
-
-          <div className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-shadow duration-200">
-            <div className="flex items-center justify-center w-16 h-16 bg-purple-100 rounded-lg mb-6 mx-auto">
-              <Users className="w-8 h-8 text-purple-600" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-4 text-center">Track Progress</h3>
-            <p className="text-gray-600 text-center">
-              Monitor your learning journey and see how you improve over time with our progress tracking system.
-            </p>
           </div>
         </div>
 
