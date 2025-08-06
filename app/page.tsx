@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CheckCircle, XCircle, Download, RefreshCw } from 'lucide-react'
-import { Question, QuizResult } from './types'
+import { CheckCircle, XCircle, Download, RefreshCw, Play, BookOpen, Users } from 'lucide-react'
+import { Question, QuizResult, Quiz } from './types'
 
 export default function QuizPage() {
+  const [availableQuizzes, setAvailableQuizzes] = useState<Quiz[]>([])
+  const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null)
   const [questions, setQuestions] = useState<Question[]>([])
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [answers, setAnswers] = useState<{ [key: number]: string }>({})
@@ -15,29 +17,48 @@ export default function QuizPage() {
   const [showNameInput, setShowNameInput] = useState(true)
   const [quizTitle, setQuizTitle] = useState('')
   const [quizDescription, setQuizDescription] = useState('')
+  const [currentView, setCurrentView] = useState<'landing' | 'quiz'>('landing')
 
   useEffect(() => {
-    loadLatestQuiz()
+    loadAvailableQuizzes()
     // Set up polling to check for new quizzes every 30 seconds
-    const interval = setInterval(loadLatestQuiz, 30000)
+    const interval = setInterval(loadAvailableQuizzes, 30000)
     return () => clearInterval(interval)
   }, [])
 
-  const loadLatestQuiz = async () => {
+  const loadAvailableQuizzes = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/quiz/latest')
+      const response = await fetch('/api/quiz/list')
       if (response.ok) {
         const data = await response.json()
-        setQuestions(data.questions || [])
-        setQuizTitle(data.title || '')
-        setQuizDescription(data.description || '')
+        setAvailableQuizzes(data.quizzes || [])
       }
     } catch (error) {
-      console.error('Error loading quiz:', error)
+      console.error('Error loading quizzes:', error)
     } finally {
       setLoading(false)
     }
+  }
+
+  const selectQuiz = (quiz: Quiz) => {
+    setSelectedQuiz(quiz)
+    setQuestions(quiz.questions)
+    setQuizTitle(quiz.title)
+    setQuizDescription(quiz.description)
+    setCurrentView('quiz')
+  }
+
+  const backToLanding = () => {
+    setCurrentView('landing')
+    setSelectedQuiz(null)
+    setQuestions([])
+    setCurrentQuestionIndex(0)
+    setAnswers({})
+    setIsSubmitted(false)
+    setResult(null)
+    setShowNameInput(true)
+    setUserName('')
   }
 
   const handleAnswerSelect = (answer: string) => {
@@ -125,8 +146,86 @@ export default function QuizPage() {
     setResult(null)
     setShowNameInput(true)
     setUserName('')
+    setCurrentView('landing')
+    setSelectedQuiz(null)
+    setQuestions([])
   }
 
+  if (loading && currentView === 'landing') {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+      </div>
+    )
+  }
+
+  // Landing page - show available quizzes
+  if (currentView === 'landing') {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">QuizBot Form</h1>
+          <p className="text-xl text-gray-600 mb-6">Choose a quiz to test your knowledge</p>
+          <button
+            onClick={loadAvailableQuizzes}
+            disabled={loading}
+            className="btn-secondary inline-flex items-center gap-2 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh Quizzes
+          </button>
+        </div>
+
+        {availableQuizzes.length === 0 ? (
+          <div className="text-center py-12">
+            <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">No Quizzes Available</h2>
+            <p className="text-gray-600 mb-6">Please ask an admin to create a quiz first.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {availableQuizzes.map((quiz) => (
+              <div key={quiz.id} className="card hover:shadow-lg transition-shadow duration-200">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">{quiz.title}</h3>
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-3">{quiz.description}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <div className="flex items-center gap-1">
+                      <BookOpen className="w-4 h-4" />
+                      <span>{quiz.questions.length} questions</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Users className="w-4 h-4" />
+                      <span>Multiple choice</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="text-xs text-gray-400 mb-4">
+                  Created: {new Date(quiz.createdAt).toLocaleDateString()}
+                </div>
+                
+                <button
+                  onClick={() => selectQuiz(quiz)}
+                  className="btn-primary w-full inline-flex items-center justify-center gap-2"
+                >
+                  <Play className="w-4 h-4" />
+                  Start Quiz
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Quiz taking logic starts here
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
@@ -138,14 +237,14 @@ export default function QuizPage() {
   if (questions.length === 0) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">No Quiz Available</h2>
-        <p className="text-gray-600 mb-6">Please ask an admin to generate a quiz first.</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">No Quiz Selected</h2>
+        <p className="text-gray-600 mb-6">Please select a quiz from the landing page.</p>
         <button
-          onClick={loadLatestQuiz}
+          onClick={backToLanding}
           className="btn-primary inline-flex items-center gap-2"
         >
           <RefreshCw className="w-4 h-4" />
-          Refresh
+          Back to Quizzes
         </button>
       </div>
     )
@@ -164,14 +263,23 @@ export default function QuizPage() {
                 <p className="text-gray-600 text-sm">{quizDescription}</p>
               )}
             </div>
-            <button
-              onClick={loadLatestQuiz}
-              disabled={loading}
-              className="btn-secondary text-sm inline-flex items-center gap-1 disabled:opacity-50"
-              title="Refresh quiz"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={backToLanding}
+                className="btn-secondary text-sm inline-flex items-center gap-1"
+                title="Back to quiz selection"
+              >
+                ← Back
+              </button>
+              <button
+                onClick={loadAvailableQuizzes}
+                disabled={loading}
+                className="btn-secondary text-sm inline-flex items-center gap-1 disabled:opacity-50"
+                title="Refresh quiz"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
           </div>
           <div className="space-y-4">
             <div>
@@ -283,11 +391,11 @@ export default function QuizPage() {
               Download CSV
             </button>
             <button
-              onClick={resetQuiz}
+              onClick={backToLanding}
               className="btn-secondary inline-flex items-center gap-2"
             >
               <RefreshCw className="w-4 h-4" />
-              Take New Quiz
+              Back to Quizzes
             </button>
           </div>
         </div>
@@ -314,7 +422,14 @@ export default function QuizPage() {
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={loadLatestQuiz}
+                onClick={backToLanding}
+                className="btn-secondary text-xs inline-flex items-center gap-1"
+                title="Back to quiz selection"
+              >
+                ← Back
+              </button>
+              <button
+                onClick={loadAvailableQuizzes}
                 disabled={loading}
                 className="btn-secondary text-xs inline-flex items-center gap-1 disabled:opacity-50"
                 title="Refresh quiz"
