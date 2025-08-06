@@ -6,7 +6,7 @@ import { GenerateQuizRequest, Quiz } from '../types'
 
 export default function AdminPage() {
   const [prompt, setPrompt] = useState('')
-  const [questionCount, setQuestionCount] = useState(5)
+  const [questionCount, setQuestionCount] = useState(10)
   const [questionType, setQuestionType] = useState<'multiple-choice' | 'true-false' | 'enumeration' | 'mixed'>('multiple-choice')
   const [loading, setLoading] = useState(false)
   const [generatedQuiz, setGeneratedQuiz] = useState<Quiz | null>(null)
@@ -196,7 +196,7 @@ export default function AdminPage() {
                   className="input-field"
                   disabled={loading}
                 >
-                  {[3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                  {[10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(num => (
                     <option key={num} value={num}>{num} questions</option>
                   ))}
                 </select>
@@ -497,9 +497,22 @@ export default function AdminPage() {
           </div>
 
           <div className="mt-6 p-4 bg-green-50 rounded-lg">
-            <p className="text-green-800 text-sm">
-              ✅ Quiz has been saved and is now available for users to take!
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-green-800 text-sm">
+                ✅ Quiz has been saved and is now available for users to take!
+              </p>
+              <a
+                href="/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary text-sm inline-flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                Go to Quiz
+              </a>
+            </div>
           </div>
         </div>
       )}

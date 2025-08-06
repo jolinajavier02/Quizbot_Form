@@ -13,9 +13,14 @@ export default function QuizPage() {
   const [loading, setLoading] = useState(false)
   const [userName, setUserName] = useState('')
   const [showNameInput, setShowNameInput] = useState(true)
+  const [quizTitle, setQuizTitle] = useState('')
+  const [quizDescription, setQuizDescription] = useState('')
 
   useEffect(() => {
     loadLatestQuiz()
+    // Set up polling to check for new quizzes every 30 seconds
+    const interval = setInterval(loadLatestQuiz, 30000)
+    return () => clearInterval(interval)
   }, [])
 
   const loadLatestQuiz = async () => {
@@ -25,6 +30,8 @@ export default function QuizPage() {
       if (response.ok) {
         const data = await response.json()
         setQuestions(data.questions || [])
+        setQuizTitle(data.title || '')
+        setQuizDescription(data.description || '')
       }
     } catch (error) {
       console.error('Error loading quiz:', error)
@@ -148,7 +155,24 @@ export default function QuizPage() {
     return (
       <div className="max-w-md mx-auto">
         <div className="card">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Welcome to QuizBot Form</h2>
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                {quizTitle || 'Welcome to QuizBot Form'}
+              </h2>
+              {quizDescription && (
+                <p className="text-gray-600 text-sm">{quizDescription}</p>
+              )}
+            </div>
+            <button
+              onClick={loadLatestQuiz}
+              disabled={loading}
+              className="btn-secondary text-sm inline-flex items-center gap-1 disabled:opacity-50"
+              title="Refresh quiz"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
           <div className="space-y-4">
             <div>
               <label htmlFor="userName" className="block text-sm font-medium text-gray-700 mb-2">
@@ -280,10 +304,27 @@ export default function QuizPage() {
       <div className="card">
         <div className="mb-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Quiz for {userName}</h2>
-            <span className="text-sm text-gray-500">
-              Question {currentQuestionIndex + 1} of {questions.length}
-            </span>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">
+                {quizTitle ? `${quizTitle} - ${userName}` : `Quiz for ${userName}`}
+              </h2>
+              {quizDescription && (
+                <p className="text-sm text-gray-600 mt-1">{quizDescription}</p>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={loadLatestQuiz}
+                disabled={loading}
+                className="btn-secondary text-xs inline-flex items-center gap-1 disabled:opacity-50"
+                title="Refresh quiz"
+              >
+                <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+              </button>
+              <span className="text-sm text-gray-500">
+                Question {currentQuestionIndex + 1} of {questions.length}
+              </span>
+            </div>
           </div>
           
           <div className="w-full bg-gray-200 rounded-full h-2">
