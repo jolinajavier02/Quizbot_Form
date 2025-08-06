@@ -14,11 +14,17 @@ export default function TakeQuizPage() {
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [result, setResult] = useState<QuizResult | null>(null)
   const [loading, setLoading] = useState(false)
-  const [userName, setUserName] = useState('')
-  const [showNameInput, setShowNameInput] = useState(false)
+  const [userName, setUserName] = useState('Anonymous User')
   const [quizTitle, setQuizTitle] = useState('')
   const [quizDescription, setQuizDescription] = useState('')
-  const [currentView, setCurrentView] = useState<'quizList' | 'quiz' | 'result'>('quizList')
+  const [currentView, setCurrentView] = useState<'quizList' | 'userInfo' | 'quiz' | 'result'>('quizList')
+  const [userInfo, setUserInfo] = useState({
+    fullName: '',
+    age: '',
+    email: '',
+    country: '',
+    gender: ''
+  })
 
   useEffect(() => {
     loadAvailableQuizzes()
@@ -64,11 +70,11 @@ export default function TakeQuizPage() {
     setQuestions(quiz.questions)
     setQuizTitle(quiz.title)
     setQuizDescription(quiz.description)
-    setShowNameInput(true)
     setCurrentQuestionIndex(0)
     setAnswers({})
     setResult(null)
     setIsSubmitted(false)
+    setCurrentView('userInfo')
   }
 
   const viewResult = (quiz: Quiz) => {
@@ -105,8 +111,22 @@ export default function TakeQuizPage() {
     setAnswers({})
     setIsSubmitted(false)
     setResult(null)
-    setShowNameInput(false)
-    setUserName('')
+    setUserInfo({
+      fullName: '',
+      age: '',
+      email: '',
+      country: '',
+      gender: ''
+    })
+  }
+
+  const handleUserInfoSubmit = () => {
+    if (!userInfo.fullName || !userInfo.age || !userInfo.email || !userInfo.country || !userInfo.gender) {
+      alert('Please fill in all required fields.')
+      return
+    }
+    setUserName(userInfo.fullName)
+    setCurrentView('quiz')
   }
 
   const handleAnswerSelect = (answer: string) => {
@@ -129,11 +149,6 @@ export default function TakeQuizPage() {
   }
 
   const handleSubmit = () => {
-    if (!userName.trim()) {
-      alert('Please enter your name before submitting.')
-      return
-    }
-
     try {
       setLoading(true)
       
@@ -288,41 +303,7 @@ export default function TakeQuizPage() {
           </Link>
         </div>
 
-        {/* User Name Input */}
-        {!userName && (
-          <div className="bg-white rounded-lg p-6 mb-8 shadow-sm border">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Enter Your Name</h2>
-            <div className="flex gap-4">
-              <input
-                type="text"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
-                placeholder="Your name"
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                onKeyPress={(e) => e.key === 'Enter' && userName.trim() && setUserName(userName.trim())}
-              />
-              <button
-                onClick={() => setUserName(userName.trim())}
-                disabled={!userName.trim()}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        )}
 
-        {userName && (
-          <div className="mb-6">
-            <p className="text-lg text-gray-700">Welcome, <span className="font-semibold">{userName}</span>!</p>
-            <button
-              onClick={() => setUserName('')}
-              className="text-blue-600 hover:text-blue-700 text-sm"
-            >
-              Change name
-            </button>
-          </div>
-        )}
 
         <div className="mb-6">
           <button
@@ -407,19 +388,19 @@ export default function TakeQuizPage() {
     )
   }
 
-  // Name Input View
-  if (showNameInput) {
+  // User Info View
+  if (currentView === 'userInfo') {
     return (
-      <div className="max-w-md mx-auto">
-        <div className="bg-white rounded-lg p-6 shadow-sm border">
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-white rounded-lg p-8 shadow-sm border">
           <div className="flex justify-between items-start mb-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                {quizTitle || 'Welcome to QuizBot Form'}
+                Personal Information Required
               </h2>
-              {quizDescription && (
-                <p className="text-gray-600 text-sm">{quizDescription}</p>
-              )}
+              <p className="text-gray-600">
+                Please provide your details before starting the quiz: {quizTitle}
+              </p>
             </div>
             <button
               onClick={backToQuizList}
@@ -428,79 +409,109 @@ export default function TakeQuizPage() {
               <ArrowLeft className="w-5 h-5" />
             </button>
           </div>
-          <div className="space-y-4">
+          
+          <form onSubmit={(e) => { e.preventDefault(); handleUserInfoSubmit(); }} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  id="fullName"
+                  value={userInfo.fullName}
+                  onChange={(e) => setUserInfo(prev => ({ ...prev, fullName: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter your full name"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="age" className="block text-sm font-medium text-gray-700 mb-2">
+                  Age *
+                </label>
+                <input
+                  type="number"
+                  id="age"
+                  value={userInfo.age}
+                  onChange={(e) => setUserInfo(prev => ({ ...prev, age: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter your age"
+                  min="1"
+                  max="120"
+                  required
+                />
+              </div>
+            </div>
+            
             <div>
-              <label htmlFor="userName" className="block text-sm font-medium text-gray-700 mb-2">
-                Enter your name to start the quiz:
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                Email *
               </label>
               <input
-                type="text"
-                id="userName"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
+                type="email"
+                id="email"
+                value={userInfo.email}
+                onChange={(e) => setUserInfo(prev => ({ ...prev, email: e.target.value }))}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Your name"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter' && userName.trim()) {
-                    // Check for existing submission
-                    const existingResults = JSON.parse(localStorage.getItem('quizResults') || '[]') as QuizResult[]
-                    const existingSubmission = existingResults.find(
-                      result => result.quizId === selectedQuiz?.id && result.userName.toLowerCase() === userName.trim().toLowerCase()
-                    )
-                    
-                    if (existingSubmission) {
-                      if (existingSubmission.isApproved) {
-                        // Show approved results
-                        setResult(existingSubmission)
-                        setIsSubmitted(true)
-                        setCurrentView('result')
-                      } else {
-                        // Show pending message
-                        alert('Your quiz submission is pending admin approval. Please wait for the results to be reviewed.')
-                        backToQuizList()
-                        return
-                      }
-                    } else {
-                      setShowNameInput(false)
-                      setCurrentView('quiz')
-                    }
-                  }
-                }}
+                placeholder="Enter your email address"
+                required
               />
             </div>
-            <button
-              onClick={() => {
-                if (userName.trim()) {
-                  // Check for existing submission
-                  const existingResults = JSON.parse(localStorage.getItem('quizResults') || '[]') as QuizResult[]
-                  const existingSubmission = existingResults.find(
-                    result => result.quizId === selectedQuiz?.id && result.userName.toLowerCase() === userName.trim().toLowerCase()
-                  )
-                  
-                  if (existingSubmission) {
-                    if (existingSubmission.isApproved) {
-                      // Show approved results
-                      setResult(existingSubmission)
-                      setIsSubmitted(true)
-                      setCurrentView('result')
-                    } else {
-                      // Show pending message
-                      alert('Your quiz submission is pending admin approval. Please wait for the results to be reviewed.')
-                      backToQuizList()
-                      return
-                    }
-                  } else {
-                    setShowNameInput(false)
-                    setCurrentView('quiz')
-                  }
-                }
-              }}
-              disabled={!userName.trim()}
-              className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Start Quiz ({questions.length} questions)
-            </button>
-          </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-2">
+                  Country *
+                </label>
+                <input
+                  type="text"
+                  id="country"
+                  value={userInfo.country}
+                  onChange={(e) => setUserInfo(prev => ({ ...prev, country: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter your country"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-2">
+                  Gender *
+                </label>
+                <select
+                  id="gender"
+                  value={userInfo.gender}
+                  onChange={(e) => setUserInfo(prev => ({ ...prev, gender: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                >
+                  <option value="">Select gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                  <option value="prefer-not-to-say">Prefer not to say</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex gap-4 pt-4">
+              <button
+                type="button"
+                onClick={backToQuizList}
+                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                Start Quiz ({questions.length} questions)
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     )
@@ -514,7 +525,6 @@ export default function TakeQuizPage() {
           <div className="flex justify-between items-start mb-6">
             <div className="text-center flex-1">
               <h2 className="text-3xl font-bold text-gray-900 mb-2">Quiz Results</h2>
-              <p className="text-lg text-gray-600">Hello {userName}!</p>
             </div>
             <button
               onClick={backToQuizList}

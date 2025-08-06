@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Send, Loader2, CheckCircle, AlertCircle, Upload, FileText, Clipboard, Users, Calendar, Trophy, Eye, MoreVertical, Edit, Archive, Plus, Lock, User } from 'lucide-react'
+import { Send, Loader2, CheckCircle, AlertCircle, Upload, FileText, Clipboard, Users, Calendar, Trophy, Eye, MoreVertical, Edit, Archive, Plus, Lock, User, Trash2 } from 'lucide-react'
 import { Quiz, QuizResult } from '../types'
 
 export default function AdminPage() {
@@ -328,6 +328,24 @@ d) Saturn
     setShowDropdown(null)
   }
 
+  const handleDeleteQuiz = (quizId: string) => {
+    if (window.confirm('Are you sure you want to delete this quiz? This action cannot be undone.')) {
+      try {
+        const updatedQuizzes = quizzes.filter(q => q.id !== quizId)
+        setQuizzes(updatedQuizzes)
+        localStorage.setItem('quizzes', JSON.stringify(updatedQuizzes))
+        
+        setSuccess('Quiz deleted successfully!')
+        setTimeout(() => setSuccess(''), 3000)
+      } catch (error) {
+        console.error('Error deleting quiz:', error)
+        setError('Failed to delete quiz.')
+        setTimeout(() => setError(''), 3000)
+      }
+    }
+    setShowDropdown(null)
+  }
+
   const handleRestoreQuiz = (quizId: string) => {
     try {
       const quizToRestore = doneQuizzes.find(q => q.id === quizId)
@@ -514,6 +532,13 @@ d) Saturn
                             >
                               <Archive className="w-4 h-4" />
                               Mark as Done
+                            </button>
+                            <button
+                              onClick={() => handleDeleteQuiz(quiz.id)}
+                              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Delete
                             </button>
                           </div>
                         )}
