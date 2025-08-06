@@ -61,11 +61,25 @@ export default function TakeQuizPage() {
     )
     
     if (!userResult) return 'not_taken'
-    if (userResult.isApproved) return 'completed'
-    return 'pending'
+    // Any submitted quiz is considered completed (whether approved or pending)
+    return 'completed'
   }
 
   const selectQuiz = (quiz: Quiz) => {
+    // Check if user has already completed this quiz
+    if (userName) {
+      const existingResults = JSON.parse(localStorage.getItem('quizResults') || '[]') as QuizResult[]
+      const userResult = existingResults.find(
+        result => result.quizId === quiz.id && result.userName.toLowerCase() === userName.toLowerCase()
+      )
+      
+      if (userResult) {
+        alert('You have already completed this quiz. You can only view your results.')
+        viewResult(quiz)
+        return
+      }
+    }
+    
     setSelectedQuiz(quiz)
     setQuestions(quiz.questions)
     setQuizTitle(quiz.title)
@@ -85,8 +99,8 @@ export default function TakeQuizPage() {
       result => result.quizId === quiz.id && result.userName.toLowerCase() === userName.toLowerCase()
     )
     
-    // Only show results if user has completed the quiz and it's approved
-    if (userResult && userResult.isApproved && userResult.detailedAnswers.length === quiz.questions.length) {
+    // Show results if user has completed the quiz (whether approved or pending)
+    if (userResult && userResult.detailedAnswers.length === quiz.questions.length) {
       setSelectedQuiz(quiz)
       setQuestions(quiz.questions)
       setQuizTitle(quiz.title)
@@ -131,7 +145,25 @@ export default function TakeQuizPage() {
       alert('Please fill in all required fields.')
       return
     }
-    setUserName(userInfo.fullName)
+    
+    const newUserName = userInfo.fullName
+    
+    // Check if this user has already completed the selected quiz
+    if (selectedQuiz) {
+      const existingResults = JSON.parse(localStorage.getItem('quizResults') || '[]') as QuizResult[]
+      const userResult = existingResults.find(
+        result => result.quizId === selectedQuiz.id && result.userName.toLowerCase() === newUserName.toLowerCase()
+      )
+      
+      if (userResult) {
+        alert('You have already completed this quiz. You can only view your results.')
+        setUserName(newUserName)
+        viewResult(selectedQuiz)
+        return
+      }
+    }
+    
+    setUserName(newUserName)
     setCurrentView('quiz')
   }
 
@@ -205,13 +237,13 @@ export default function TakeQuizPage() {
       results.push(result)
       localStorage.setItem('quizResults', JSON.stringify(results))
       
+      // Set the result and show it immediately
+      setResult(result)
+      setIsSubmitted(true)
+      setCurrentView('result')
+      
       // Show submission confirmation
       alert('Quiz submitted successfully! Your results will be available after admin approval.')
-      
-      // Show "Done" button functionality
-      setCurrentView('quizList')
-      setSelectedQuiz(null)
-      setQuestions([])
     } catch (error) {
       console.error('Error submitting quiz:', error)
       alert('Error submitting quiz. Please try again.')
@@ -373,14 +405,6 @@ export default function TakeQuizPage() {
                     >
                       <CheckCircle className="w-4 h-4" />
                       View Result
-                    </button>
-                  ) : status === 'pending' ? (
-                    <button
-                      disabled
-                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg cursor-not-allowed"
-                    >
-                      <RefreshCw className="w-4 h-4" />
-                      Pending Approval
                     </button>
                   ) : (
                     <button
@@ -608,7 +632,25 @@ export default function TakeQuizPage() {
 
           <div className="flex justify-center">
             <button
-              onClick={backToQuizList}
+              onClick={() => {
+                // If this quiz is completed, stay in result view
+                if (selectedQuiz && userName) {
+                  const existingResults = JSON.parse(localStorage.getItem('quizResults') || '[]') as QuizResult[]
+                  const userResult = existingResults.find(
+                    result => result.quizId === selectedQuiz.id && result.userName.toLowerCase() === userName.toLowerCase()
+                  )
+                  
+                  if (userResult) {
+                    // Quiz is completed, just go back to quiz list but keep the completed status
+                    backToQuizList()
+                  } else {
+                    // Should not happen, but fallback to quiz list
+                    backToQuizList()
+                  }
+                } else {
+                  backToQuizList()
+                }
+              }}
               className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg"
             >
               Done
