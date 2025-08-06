@@ -6,7 +6,8 @@ const SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
 // Initialize Google Sheets API
 function getGoogleSheetsAuth() {
-  if (!process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
+  if (!process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY || 
+      process.env.GOOGLE_CLIENT_EMAIL.trim() === '' || process.env.GOOGLE_PRIVATE_KEY.trim() === '') {
     throw new Error('Google Sheets credentials not configured')
   }
 
@@ -32,7 +33,8 @@ let localResults: QuizResult[] = []
 
 export async function saveQuizToStorage(quiz: Quiz): Promise<void> {
   try {
-    if (process.env.GOOGLE_SHEET_ID && process.env.GOOGLE_CLIENT_EMAIL) {
+    if (process.env.GOOGLE_SHEET_ID && process.env.GOOGLE_CLIENT_EMAIL && 
+        process.env.GOOGLE_SHEET_ID.trim() !== '' && process.env.GOOGLE_CLIENT_EMAIL.trim() !== '') {
       await saveQuizToGoogleSheets(quiz)
     } else {
       // Fallback to local storage for development
@@ -48,7 +50,8 @@ export async function saveQuizToStorage(quiz: Quiz): Promise<void> {
 
 export async function getLatestQuizFromStorage(): Promise<Quiz | null> {
   try {
-    if (process.env.GOOGLE_SHEET_ID && process.env.GOOGLE_CLIENT_EMAIL) {
+    if (process.env.GOOGLE_SHEET_ID && process.env.GOOGLE_CLIENT_EMAIL && 
+        process.env.GOOGLE_SHEET_ID.trim() !== '' && process.env.GOOGLE_CLIENT_EMAIL.trim() !== '') {
       return await getLatestQuizFromGoogleSheets()
     } else {
       // Fallback to local storage
@@ -64,7 +67,8 @@ export async function getLatestQuizFromStorage(): Promise<Quiz | null> {
 
 export async function saveQuizResultToStorage(result: QuizResult): Promise<void> {
   try {
-    if (process.env.GOOGLE_SHEET_ID && process.env.GOOGLE_CLIENT_EMAIL) {
+    if (process.env.GOOGLE_SHEET_ID && process.env.GOOGLE_CLIENT_EMAIL && 
+        process.env.GOOGLE_SHEET_ID.trim() !== '' && process.env.GOOGLE_CLIENT_EMAIL.trim() !== '') {
       await saveQuizResultToGoogleSheets(result)
     } else {
       // Fallback to local storage
