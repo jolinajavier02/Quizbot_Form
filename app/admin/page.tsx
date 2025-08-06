@@ -128,11 +128,11 @@ export default function AdminPage() {
          setQuizTitle('')
          setQuizDescription('')
       } else {
-        setError(data.error || 'Failed to generate quiz. Please try again.')
+        setError(data.error || 'Failed to create quiz. Please try again.')
       }
     } catch (error) {
-      console.error('Error generating quiz:', error)
-      setError('An error occurred while generating the quiz. Please try again.')
+      console.error('Error creating quiz:', error)
+      setError('An error occurred while creating the quiz. Please try again.')
     } finally {
       setLoading(false)
     }
