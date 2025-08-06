@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { Send, Loader2, CheckCircle, AlertCircle, Upload, FileText, Clipboard } from 'lucide-react'
-import { Quiz } from '../types'
+import { useState, useEffect } from 'react'
+import { Send, Loader2, CheckCircle, AlertCircle, Upload, FileText, Clipboard, Users, Calendar, Trophy, Eye } from 'lucide-react'
+import { Quiz, QuizResult } from '../types'
 
 export default function AdminPage() {
   const [pastedText, setPastedText] = useState('')
@@ -10,13 +10,37 @@ export default function AdminPage() {
   const [generatedQuiz, setGeneratedQuiz] = useState<Quiz | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const [activeTab, setActiveTab] = useState<'paste' | 'upload'>('paste')
+  const [activeTab, setActiveTab] = useState<'paste' | 'upload' | 'submissions'>('paste')
+  const [submissions, setSubmissions] = useState<QuizResult[]>([])
+  const [submissionsLoading, setSubmissionsLoading] = useState(false)
+  const [selectedSubmission, setSelectedSubmission] = useState<QuizResult | null>(null)
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [uploadTitle, setUploadTitle] = useState('')
   const [uploadDescription, setUploadDescription] = useState('')
   const [uploadLoading, setUploadLoading] = useState(false)
   const [quizTitle, setQuizTitle] = useState('')
   const [quizDescription, setQuizDescription] = useState('')
+
+  const loadSubmissions = async () => {
+    try {
+      setSubmissionsLoading(true)
+      const response = await fetch('/api/quiz/submissions')
+      if (response.ok) {
+        const data = await response.json()
+        setSubmissions(data.submissions || [])
+      }
+    } catch (error) {
+      console.error('Error loading submissions:', error)
+    } finally {
+      setSubmissionsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (activeTab === 'submissions') {
+      loadSubmissions()
+    }
+  }, [activeTab])
 
   const parseQuizFromText = (text: string) => {
     const lines = text.split('\n').filter(line => line.trim())
@@ -230,6 +254,17 @@ export default function AdminPage() {
               <Upload className="w-4 h-4 inline mr-2" />
               File Upload
             </button>
+            <button
+              onClick={() => setActiveTab('submissions')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'submissions'
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Users className="w-4 h-4 inline mr-2" />
+              View Submissions
+            </button>
           </nav>
         </div>
       </div>
@@ -424,6 +459,51 @@ export default function AdminPage() {
                 )}
               </div>
             </>
+          ) : activeTab === 'submissions' ? (
+            <>
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Quiz Submissions</h2>
+              
+              {submissionsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary-600" />
+                  <span className="ml-2 text-gray-600">Loading submissions...</span>
+                </div>
+              ) : submissions.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                  <p>No quiz submissions yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {submissions.map((submission) => (
+                    <div key={submission.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-medium text-gray-900">{submission.quizTitle || 'Untitled Quiz'}</h3>
+                        <div className="flex items-center gap-2">
+                          <Trophy className="w-4 h-4 text-yellow-500" />
+                          <span className="text-sm font-medium text-gray-700">{submission.percentage}%</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-4 h-4" />
+                          <span>{new Date(submission.submittedAt).toLocaleDateString()}</span>
+                        </div>
+                        <span>By: {submission.userName}</span>
+                        <span>Score: {submission.score}/{submission.totalQuestions}</span>
+                      </div>
+                      <button
+                        onClick={() => setSelectedSubmission(submission)}
+                        className="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center gap-1"
+                      >
+                        <Eye className="w-4 h-4" />
+                        View Details
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -476,6 +556,96 @@ d) Mars
                   </ul>
                 </div>
               </div>
+            </>
+          ) : activeTab === 'submissions' ? (
+            <>
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Submission Details</h2>
+              
+              {selectedSubmission ? (
+                <div className="space-y-6">
+                  <div className="border-b border-gray-200 pb-4">
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">{selectedSubmission.quizTitle}</h3>
+                    {selectedSubmission.quizDescription && (
+                      <p className="text-gray-600 mb-3">{selectedSubmission.quizDescription}</p>
+                    )}
+                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                      <span>Submitted by: <strong>{selectedSubmission.userName}</strong></span>
+                      <span>Date: {new Date(selectedSubmission.submittedAt).toLocaleString()}</span>
+                    </div>
+                    <div className="mt-2 flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <Trophy className="w-5 h-5 text-yellow-500" />
+                        <span className="font-medium text-lg">{selectedSubmission.percentage}%</span>
+                      </div>
+                      <span className="text-gray-600">({selectedSubmission.score}/{selectedSubmission.totalQuestions} correct)</span>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h4 className="font-medium text-gray-900">Detailed Answers:</h4>
+                    {selectedSubmission.detailedAnswers?.map((answer, index) => (
+                      <div key={answer.questionId || index} className="border rounded-lg p-4">
+                        <h5 className="font-medium text-gray-900 mb-3">
+                          {index + 1}. {answer.question}
+                        </h5>
+                        
+                        {answer.options && answer.options.length > 0 && (
+                          <div className="space-y-2 mb-3">
+                            {answer.options.map((option, optionIndex) => (
+                              <div
+                                key={optionIndex}
+                                className={`p-2 rounded border text-sm ${
+                                  option === answer.correctAnswer
+                                    ? 'bg-green-50 border-green-200 text-green-800'
+                                    : option === answer.userAnswer
+                                    ? 'bg-red-50 border-red-200 text-red-800'
+                                    : 'bg-gray-50 border-gray-200'
+                                }`}
+                              >
+                                {option}
+                                {option === answer.correctAnswer && (
+                                  <span className="ml-2 font-medium">(Correct)</span>
+                                )}
+                                {option === answer.userAnswer && option !== answer.correctAnswer && (
+                                  <span className="ml-2 font-medium">(Your Answer)</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center justify-between text-sm">
+                          <div>
+                            <span className="text-gray-600">Your answer: </span>
+                            <span className={answer.isCorrect ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                              {Array.isArray(answer.userAnswer) ? answer.userAnswer.join(', ') : answer.userAnswer}
+                            </span>
+                          </div>
+                          <div className={`px-2 py-1 rounded text-xs font-medium ${
+                            answer.isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            {answer.isCorrect ? 'Correct' : 'Incorrect'}
+                          </div>
+                        </div>
+                      </div>
+                    )) || (
+                      <p className="text-gray-500 text-center py-4">No detailed answers available for this submission.</p>
+                    )}
+                  </div>
+                  
+                  <button
+                    onClick={() => setSelectedSubmission(null)}
+                    className="btn-secondary w-full"
+                  >
+                    Back to Submissions List
+                  </button>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Eye className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                  <p>Select a submission to view details</p>
+                </div>
+              )}
             </>
           ) : (
             <>
