@@ -541,6 +541,13 @@ export default function AdminPage() {
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="font-medium text-gray-900">{submission.quizTitle || 'Untitled Quiz'}</h3>
                         <div className="flex items-center gap-2">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            submission.isApproved 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {submission.isApproved ? 'Approved' : 'Pending'}
+                          </span>
                           <Trophy className="w-4 h-4 text-yellow-500" />
                           <span className="text-sm font-medium text-gray-700">{submission.percentage}%</span>
                         </div>
@@ -553,13 +560,23 @@ export default function AdminPage() {
                         <span>By: {submission.userName}</span>
                         <span>Score: {submission.score}/{submission.totalQuestions}</span>
                       </div>
-                      <button
-                        onClick={() => setSelectedSubmission(submission)}
-                        className="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center gap-1"
-                      >
-                        <Eye className="w-4 h-4" />
-                        View Details
-                      </button>
+                      <div className="flex items-center justify-between">
+                        <button
+                          onClick={() => setSelectedSubmission(submission)}
+                          className="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center gap-1"
+                        >
+                          <Eye className="w-4 h-4" />
+                          View Details
+                        </button>
+                        {!submission.isApproved && (
+                          <button
+                            onClick={() => handleApproveSubmission(submission.id)}
+                            className="text-green-600 hover:text-green-700 text-sm font-medium px-3 py-1 border border-green-300 rounded hover:bg-green-50"
+                          >
+                            Approve
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
