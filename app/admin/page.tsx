@@ -461,21 +461,36 @@ export default function AdminPage() {
                   {index + 1}. {question.question}
                 </h4>
                 <div className="space-y-2">
-                  {question.options.map((option, optionIndex) => (
-                    <div
-                      key={optionIndex}
-                      className={`p-2 rounded border ${
-                        option === question.correctAnswer
-                          ? 'bg-success-50 border-success-200 text-success-800'
-                          : 'bg-gray-50 border-gray-200'
-                      }`}
-                    >
-                      {option}
-                      {option === question.correctAnswer && (
-                        <span className="ml-2 text-xs font-medium">(Correct Answer)</span>
+                  {question.type === 'enumeration' ? (
+                    <div className="p-2 rounded border bg-success-50 border-success-200 text-success-800">
+                      <div className="font-medium text-sm mb-1">Correct Answers:</div>
+                      {Array.isArray(question.correctAnswer) ? (
+                        <ul className="list-disc list-inside space-y-1">
+                          {question.correctAnswer.map((answer, idx) => (
+                            <li key={idx} className="text-sm">{answer}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span className="text-sm">{question.correctAnswer}</span>
                       )}
                     </div>
-                  ))}
+                  ) : (
+                    question.options.map((option, optionIndex) => (
+                      <div
+                        key={optionIndex}
+                        className={`p-2 rounded border ${
+                          option === question.correctAnswer
+                            ? 'bg-success-50 border-success-200 text-success-800'
+                            : 'bg-gray-50 border-gray-200'
+                        }`}
+                      >
+                        {option}
+                        {option === question.correctAnswer && (
+                          <span className="ml-2 text-xs font-medium">(Correct Answer)</span>
+                        )}
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             ))}
