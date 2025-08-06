@@ -1,17 +1,22 @@
 'use client'
 
 import { useState } from 'react'
-import { Send, Loader2, CheckCircle, AlertCircle } from 'lucide-react'
+import { Send, Loader2, CheckCircle, AlertCircle, Upload, FileText } from 'lucide-react'
 import { GenerateQuizRequest, Quiz } from '../types'
 
 export default function AdminPage() {
   const [prompt, setPrompt] = useState('')
   const [questionCount, setQuestionCount] = useState(5)
-  const [questionType, setQuestionType] = useState<'multiple-choice' | 'true-false' | 'mixed'>('multiple-choice')
+  const [questionType, setQuestionType] = useState<'multiple-choice' | 'true-false' | 'enumeration' | 'mixed'>('multiple-choice')
   const [loading, setLoading] = useState(false)
   const [generatedQuiz, setGeneratedQuiz] = useState<Quiz | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [activeTab, setActiveTab] = useState<'generate' | 'upload'>('generate')
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [uploadTitle, setUploadTitle] = useState('')
+  const [uploadDescription, setUploadDescription] = useState('')
+  const [uploadLoading, setUploadLoading] = useState(false)
 
   const handleGenerateQuiz = async () => {
     if (!prompt.trim()) {
