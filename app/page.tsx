@@ -26,16 +26,20 @@ export default function QuizPage() {
     return () => clearInterval(interval)
   }, [])
 
-  const loadAvailableQuizzes = async () => {
+  const loadAvailableQuizzes = () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/quiz/list')
-      if (response.ok) {
-        const data = await response.json()
-        setAvailableQuizzes(data.quizzes || [])
+      // Load quizzes from localStorage
+      const storedQuizzes = localStorage.getItem('quizzes')
+      if (storedQuizzes) {
+        const quizzes = JSON.parse(storedQuizzes)
+        setAvailableQuizzes(Array.isArray(quizzes) ? quizzes : [])
+      } else {
+        setAvailableQuizzes([])
       }
     } catch (error) {
       console.error('Error loading quizzes:', error)
+      setAvailableQuizzes([])
     } finally {
       setLoading(false)
     }
@@ -80,7 +84,7 @@ export default function QuizPage() {
     }
   }
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!userName.trim()) {
       alert('Please enter your name before submitting.')
       return
@@ -88,24 +92,48 @@ export default function QuizPage() {
 
     try {
       setLoading(true)
-      const response = await fetch('/api/quiz/submit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userName,
-          answers,
-          questions,
-          quiz: selectedQuiz
-        })
+      
+      // Calculate results client-side
+      let score = 0
+      const detailedAnswers = questions.map((question, index) => {
+        const userAnswer = answers[index] || ''
+        const isCorrect = userAnswer === question.correctAnswer
+        if (isCorrect) score++
+        
+        return {
+          questionId: question.id,
+          question: question.question,
+          userAnswer,
+          correctAnswer: question.correctAnswer,
+          isCorrect,
+          options: question.options || []
+        }
       })
-
-      if (response.ok) {
-        const result = await response.json()
-        setResult(result)
-        setIsSubmitted(true)
+      
+      const percentage = Math.round((score / questions.length) * 100)
+      
+      const result: QuizResult = {
+        id: `result_${Date.now()}`,
+        quizId: selectedQuiz?.id || '',
+        quizTitle: selectedQuiz?.title || '',
+        quizDescription: selectedQuiz?.description || '',
+        userName,
+        answers,
+        detailedAnswers,
+        score,
+        totalQuestions: questions.length,
+        percentage,
+        submittedAt: new Date().toISOString()
       }
+      
+      // Save to localStorage
+      const existingResults = localStorage.getItem('quizResults')
+      const results = existingResults ? JSON.parse(existingResults) : []
+      results.push(result)
+      localStorage.setItem('quizResults', JSON.stringify(results))
+      
+      setResult(result)
+      setIsSubmitted(true)
     } catch (error) {
       console.error('Error submitting quiz:', error)
       alert('Error submitting quiz. Please try again.')
