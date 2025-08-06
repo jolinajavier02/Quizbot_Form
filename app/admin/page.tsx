@@ -36,12 +36,12 @@ export default function AdminPage() {
         // Save previous question if exists
         if (currentQuestion && currentOptions.length > 0 && correctAnswer) {
           questions.push({
-            id: `q${questions.length + 1}`,
-            question: currentQuestion,
-            options: currentOptions,
-            correctAnswer: correctAnswer,
-            type: 'multiple-choice'
-          })
+             id: `q${questions.length + 1}`,
+             question: currentQuestion,
+             options: currentOptions,
+             correctAnswer: correctAnswer,
+             type: 'multiple-choice' as const
+           })
         }
         
         // Start new question
@@ -67,12 +67,12 @@ export default function AdminPage() {
     // Add the last question
     if (currentQuestion && currentOptions.length > 0 && correctAnswer) {
       questions.push({
-        id: `q${questions.length + 1}`,
-        question: currentQuestion,
-        options: currentOptions,
-        correctAnswer: correctAnswer,
-        type: 'multiple-choice'
-      })
+         id: `q${questions.length + 1}`,
+         question: currentQuestion,
+         options: currentOptions,
+         correctAnswer: correctAnswer,
+         type: 'multiple-choice' as const
+       })
     }
     
     return questions

@@ -5,34 +5,62 @@ import { saveQuizToStorage } from '../../../utils/storage'
 
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData()
-    const file = formData.get('file') as File
-    const title = formData.get('title') as string
-    const description = formData.get('description') as string
+    const contentType = request.headers.get('content-type') || ''
+    let quizData: Quiz | QuizFileData
+    let title: string
+    let description: string
 
-    if (!file) {
-      return NextResponse.json(
-        { success: false, error: 'No file provided' },
-        { status: 400 }
-      )
+    // Handle JSON data (from paste functionality)
+    if (contentType.includes('application/json')) {
+      const jsonData = await request.json()
+      
+      // If it's already a complete Quiz object, use it directly
+      if (jsonData.id && jsonData.title && jsonData.questions) {
+        quizData = jsonData as Quiz
+        title = quizData.title
+        description = quizData.description || ''
+      } else {
+        return NextResponse.json(
+          { success: false, error: 'Invalid quiz data structure' },
+          { status: 400 }
+        )
+      }
     }
+    // Handle form data (from file upload)
+    else if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData()
+      const file = formData.get('file') as File
+      title = formData.get('title') as string
+      description = formData.get('description') as string
 
-    if (!file.name.endsWith('.json')) {
-      return NextResponse.json(
-        { success: false, error: 'Only JSON files are allowed' },
-        { status: 400 }
-      )
-    }
+      if (!file) {
+        return NextResponse.json(
+          { success: false, error: 'No file provided' },
+          { status: 400 }
+        )
+      }
 
-    // Read and parse the JSON file
-    const fileContent = await file.text()
-    let quizData: QuizFileData
-    
-    try {
-      quizData = JSON.parse(fileContent)
-    } catch (parseError) {
+      if (!file.name.endsWith('.json')) {
+        return NextResponse.json(
+          { success: false, error: 'Only JSON files are allowed' },
+          { status: 400 }
+        )
+      }
+
+      // Read and parse the JSON file
+      const fileContent = await file.text()
+      
+      try {
+        quizData = JSON.parse(fileContent) as QuizFileData
+      } catch (parseError) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid JSON format' },
+          { status: 400 }
+        )
+      }
+    } else {
       return NextResponse.json(
-        { success: false, error: 'Invalid JSON format' },
+        { success: false, error: 'Unsupported content type' },
         { status: 400 }
       )
     }
