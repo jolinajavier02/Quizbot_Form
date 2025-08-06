@@ -1,6 +1,6 @@
 # QuizBot Form 🎯
 
-An interactive quiz web application that mimics Google Forms but with faster question input using AI-generated content. Built with Next.js, React, and integrated with ChatGPT API for automatic quiz generation.
+An interactive quiz web application that mimics Google Forms with fast question input and local quiz generation. Built with Next.js, React, and TypeScript with a focus on simplicity and performance.
 
 ## 🆕 Latest Updates (v2.0)
 
@@ -12,7 +12,7 @@ An interactive quiz web application that mimics Google Forms but with faster que
 
 ## ✨ Features
 
-- **AI-Powered Quiz Generation**: Generate quizzes instantly using ChatGPT API with improved error handling
+- **Local Quiz Generation**: Generate quizzes instantly using built-in templates and mock data
 - **Interactive Quiz Taking**: Clean, mobile-friendly interface with enhanced validation
 - **Auto-Grading**: Immediate scoring and detailed results with completion checks
 - **Multiple Question Types**: Support for multiple choice and true/false questions
@@ -28,7 +28,6 @@ An interactive quiz web application that mimics Google Forms but with faster que
 ### Prerequisites
 
 - Node.js 18+ installed
-- OpenAI API key
 - Google Sheets API credentials (optional, for data storage)
 
 ### Installation
@@ -46,7 +45,6 @@ An interactive quiz web application that mimics Google Forms but with faster que
    
    Edit `.env.local` and add your API keys:
    ```env
-   OPENAI_API_KEY=your_openai_api_key_here
    GOOGLE_CLIENT_EMAIL=your_service_account_email
    GOOGLE_PRIVATE_KEY="your_private_key"
    GOOGLE_SHEET_ID=your_sheet_id
@@ -61,12 +59,6 @@ An interactive quiz web application that mimics Google Forms but with faster que
    Navigate to [http://localhost:3000](http://localhost:3000)
 
 ## 🔧 Configuration
-
-### OpenAI API Setup
-
-1. Go to [OpenAI Platform](https://platform.openai.com/api-keys)
-2. Create a new API key
-3. Add it to your `.env.local` file
 
 ### Google Sheets API Setup (Optional)
 
@@ -138,9 +130,9 @@ The app uses Tailwind CSS for styling. You can customize:
 
 Customize quiz generation by modifying:
 
-- Prompts in `app/api/quiz/generate/route.ts`
-- Question types and validation
-- AI model parameters (temperature, max_tokens)
+- Mock quiz templates in the admin interface
+- Question types and validation logic
+- Local quiz generation parameters
 
 ## 🔒 Security Notes
 

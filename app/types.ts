@@ -46,12 +46,6 @@ export interface QuizSubmission {
   questions: Question[]
 }
 
-export interface GenerateQuizRequest {
-  prompt: string
-  questionCount?: number
-  questionType?: 'multiple-choice' | 'true-false' | 'enumeration' | 'mixed'
-}
-
 export interface UploadQuizRequest {
   file: File
   title?: string
@@ -67,12 +61,6 @@ export interface QuizFileData {
     correctAnswer: string | string[]
     type: 'multiple-choice' | 'true-false' | 'enumeration'
   }[]
-}
-
-export interface GenerateQuizResponse {
-  success: boolean
-  quiz?: Quiz
-  error?: string
 }
 
 export interface ApiResponse<T = any> {
