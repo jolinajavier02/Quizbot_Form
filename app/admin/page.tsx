@@ -60,6 +60,61 @@ export default function AdminPage() {
     }
   }
 
+  const handleFileUpload = async () => {
+    if (!uploadFile) {
+      setError('Please select a JSON file to upload.')
+      return
+    }
+
+    try {
+      setUploadLoading(true)
+      setError('')
+      setSuccess('')
+      
+      const formData = new FormData()
+      formData.append('file', uploadFile)
+      if (uploadTitle.trim()) formData.append('title', uploadTitle.trim())
+      if (uploadDescription.trim()) formData.append('description', uploadDescription.trim())
+
+      const response = await fetch('/api/quiz/upload', {
+        method: 'POST',
+        body: formData
+      })
+
+      const data = await response.json()
+
+      if (data.success && data.quiz) {
+        setGeneratedQuiz(data.quiz)
+        setSuccess(data.message || `Quiz "${data.quiz.title}" uploaded successfully!`)
+        setUploadFile(null)
+        setUploadTitle('')
+        setUploadDescription('')
+        // Reset file input
+        const fileInput = document.getElementById('file-upload') as HTMLInputElement
+        if (fileInput) fileInput.value = ''
+      } else {
+        setError(data.error || 'Failed to upload quiz. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error uploading quiz:', error)
+      setError('An error occurred while uploading the quiz. Please try again.')
+    } finally {
+      setUploadLoading(false)
+    }
+  }
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      if (!file.name.endsWith('.json')) {
+        setError('Please select a JSON file.')
+        return
+      }
+      setUploadFile(file)
+      setError('')
+    }
+  }
+
   const examplePrompts = [
     "Create 5 multiple choice questions about World War II",
     "Generate 7 questions about basic JavaScript programming concepts",
