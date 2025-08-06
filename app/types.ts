@@ -35,6 +35,9 @@ export interface QuizResult {
   percentage: number
   submittedAt: string
   timeTaken?: number
+  isApproved: boolean
+  approvedAt?: string
+  approvedBy?: string
 }
 
 export interface QuizSubmission {

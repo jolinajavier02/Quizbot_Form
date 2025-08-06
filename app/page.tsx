@@ -46,6 +46,34 @@ export default function QuizPage() {
   }
 
   const selectQuiz = (quiz: Quiz) => {
+    // Check if user has already submitted this quiz
+    const existingResults = localStorage.getItem('quizResults')
+    if (existingResults) {
+      const results = JSON.parse(existingResults)
+      const userResult = results.find((r: QuizResult) => 
+        r.quizId === quiz.id && r.userName === userName
+      )
+      
+      if (userResult) {
+        if (userResult.isApproved) {
+          // Show approved results
+          setResult(userResult)
+          setIsSubmitted(true)
+          setSelectedQuiz(quiz)
+          setQuestions(quiz.questions)
+          setQuizTitle(quiz.title)
+          setQuizDescription(quiz.description)
+          setCurrentView('quiz')
+          return
+        } else {
+          // Quiz submitted but not approved yet
+          alert('You have already submitted this quiz. Please wait for admin approval to view your results.')
+          return
+        }
+      }
+    }
+    
+    // Start new quiz
     setSelectedQuiz(quiz)
     setQuestions(quiz.questions)
     setQuizTitle(quiz.title)
@@ -123,7 +151,8 @@ export default function QuizPage() {
         score,
         totalQuestions: questions.length,
         percentage,
-        submittedAt: new Date().toISOString()
+        submittedAt: new Date().toISOString(),
+        isApproved: false
       }
       
       // Save to localStorage
@@ -132,8 +161,9 @@ export default function QuizPage() {
       results.push(result)
       localStorage.setItem('quizResults', JSON.stringify(results))
       
-      setResult(result)
-      setIsSubmitted(true)
+      // Show submission confirmation instead of results
+      alert('Quiz submitted successfully! Your results will be available after admin approval.')
+      backToLanding()
     } catch (error) {
       console.error('Error submitting quiz:', error)
       alert('Error submitting quiz. Please try again.')
