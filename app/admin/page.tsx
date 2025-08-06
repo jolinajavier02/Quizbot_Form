@@ -40,6 +40,46 @@ export default function AdminPage() {
     }
   }
 
+  const handleApproveSubmission = (submissionId: string) => {
+    try {
+      const storedResults = localStorage.getItem('quizResults')
+      if (storedResults) {
+        const results = JSON.parse(storedResults)
+        const updatedResults = results.map((result: QuizResult) => {
+          if (result.id === submissionId) {
+            return {
+              ...result,
+              isApproved: true,
+              approvedAt: new Date().toISOString(),
+              approvedBy: 'admin'
+            }
+          }
+          return result
+        })
+        
+        localStorage.setItem('quizResults', JSON.stringify(updatedResults))
+        
+        // Update local state
+        setSubmissions(updatedResults)
+        if (selectedSubmission && selectedSubmission.id === submissionId) {
+          setSelectedSubmission({
+            ...selectedSubmission,
+            isApproved: true,
+            approvedAt: new Date().toISOString(),
+            approvedBy: 'admin'
+          })
+        }
+        
+        setSuccess('Quiz results approved successfully!')
+        setTimeout(() => setSuccess(''), 3000)
+      }
+    } catch (error) {
+      console.error('Error approving submission:', error)
+      setError('Failed to approve submission. Please try again.')
+      setTimeout(() => setError(''), 3000)
+    }
+  }
+
   useEffect(() => {
     if (activeTab === 'submissions') {
       loadSubmissions()
