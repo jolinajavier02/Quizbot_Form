@@ -193,13 +193,7 @@ export default function AdminPage() {
     }
   }
 
-  const examplePrompts = [
-    "Create 5 multiple choice questions about World War II",
-    "Generate 7 questions about basic JavaScript programming concepts",
-    "Make 4 true/false questions about climate change",
-    "Create 6 questions about the solar system and planets",
-    "Generate 5 questions about famous historical figures"
-  ]
+
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -215,15 +209,15 @@ export default function AdminPage() {
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
             <button
-              onClick={() => setActiveTab('generate')}
+              onClick={() => setActiveTab('paste')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'generate'
+                activeTab === 'paste'
                   ? 'border-primary-500 text-primary-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              <Send className="w-4 h-4 inline mr-2" />
-              AI Generation
+              <Clipboard className="w-4 h-4 inline mr-2" />
+              Paste Quiz
             </button>
             <button
               onClick={() => setActiveTab('upload')}
@@ -243,76 +237,70 @@ export default function AdminPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Quiz Generation/Upload Form */}
         <div className="card">
-          {activeTab === 'generate' ? (
+          {activeTab === 'paste' ? (
             <>
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Generate New Quiz</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Create Quiz from Pasted Content</h2>
           
           <div className="space-y-6">
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label htmlFor="quiz-title" className="block text-sm font-medium text-gray-700 mb-2">
+                  Quiz Title *
+                </label>
+                <input
+                  id="quiz-title"
+                  type="text"
+                  value={quizTitle}
+                  onChange={(e) => setQuizTitle(e.target.value)}
+                  className="input-field"
+                  placeholder="Enter quiz title"
+                  disabled={loading}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="quiz-description" className="block text-sm font-medium text-gray-700 mb-2">
+                  Quiz Description (Optional)
+                </label>
+                <textarea
+                  id="quiz-description"
+                  value={quizDescription}
+                  onChange={(e) => setQuizDescription(e.target.value)}
+                  className="input-field h-20 resize-none"
+                  placeholder="Enter quiz description"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+
             <div>
-              <label htmlFor="prompt" className="block text-sm font-medium text-gray-700 mb-2">
-                Quiz Prompt *
+              <label htmlFor="pasted-text" className="block text-sm font-medium text-gray-700 mb-2">
+                Quiz Content *
               </label>
               <textarea
-                id="prompt"
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                className="input-field h-32 resize-none"
-                placeholder="e.g., Create 5 multiple choice questions about World War II"
+                id="pasted-text"
+                value={pastedText}
+                onChange={(e) => setPastedText(e.target.value)}
+                className="input-field h-64 resize-none font-mono text-sm"
+                placeholder="Paste your quiz content here...\n\nExample format:\nPart 1\n\nWhat is the capital of France?\na) London\nb) Berlin\nc) Paris\nd) Madrid\n✅ Correct Answer: c"
                 disabled={loading}
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="questionCount" className="block text-sm font-medium text-gray-700 mb-2">
-                  Number of Questions
-                </label>
-                <select
-                  id="questionCount"
-                  value={questionCount}
-                  onChange={(e) => setQuestionCount(Number(e.target.value))}
-                  className="input-field"
-                  disabled={loading}
-                >
-                  {[10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(num => (
-                    <option key={num} value={num}>{num} questions</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="questionType" className="block text-sm font-medium text-gray-700 mb-2">
-                  Question Type
-                </label>
-                <select
-                  id="questionType"
-                  value={questionType}
-                  onChange={(e) => setQuestionType(e.target.value as any)}
-                  className="input-field"
-                  disabled={loading}
-                >
-                  <option value="multiple-choice">Multiple Choice</option>
-                  <option value="true-false">True/False</option>
-                  <option value="enumeration">Enumeration</option>
-                  <option value="mixed">Mixed</option>
-                </select>
-              </div>
-            </div>
-
             <button
-              onClick={handleGenerateQuiz}
-              disabled={loading || !prompt.trim()}
+              onClick={handleCreateQuiz}
+              disabled={loading || !pastedText.trim() || !quizTitle.trim()}
               className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Generating Quiz...
+                  Creating Quiz...
                 </>
               ) : (
                 <>
-                  <Send className="w-4 h-4" />
-                  Generate Quiz
+                  <Clipboard className="w-4 h-4" />
+                  Create Quiz
                 </>
               )}
             </button>
@@ -441,29 +429,52 @@ export default function AdminPage() {
 
         {/* Example Prompts / JSON Format Guide */}
         <div className="card">
-          {activeTab === 'generate' ? (
+          {activeTab === 'paste' ? (
             <>
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Example Prompts</h2>
-              <div className="space-y-3">
-                {examplePrompts.map((example, index) => (
-                  <div
-                    key={index}
-                    onClick={() => !loading && setPrompt(example)}
-                    className="p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors duration-200 text-sm text-gray-700"
-                  >
-                    {example}
-                  </div>
-                ))}
-              </div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Content Format Guide</h2>
               
-              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                <h3 className="font-medium text-blue-900 mb-2">Tips for Better Prompts:</h3>
-                <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• Be specific about the topic and difficulty level</li>
-                  <li>• Mention the number of questions you want</li>
-                  <li>• Specify question type (multiple choice, true/false, enumeration)</li>
-                  <li>• Include context like "for high school students" if needed</li>
-                </ul>
+              <div className="space-y-4">
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <h3 className="font-medium text-gray-900 mb-2">Expected Format:</h3>
+                  <pre className="text-xs text-gray-700 overflow-x-auto whitespace-pre-wrap">
+{`Part 1
+
+What is the capital of France?
+a) London
+b) Berlin
+c) Paris
+d) Madrid
+✅ Correct Answer: c
+
+Which planet is closest to the Sun?
+a) Venus
+b) Mercury
+c) Earth
+d) Mars
+✅ Correct Answer: b`}
+                  </pre>
+                </div>
+                
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <h3 className="font-medium text-blue-900 mb-2">Format Requirements:</h3>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    <li>• Each question on its own line</li>
+                    <li>• Options labeled with a), b), c), d)</li>
+                    <li>• Correct answer marked with "✅ Correct Answer: [letter]"</li>
+                    <li>• Part headers are optional and will be ignored</li>
+                    <li>• Empty lines between questions are recommended</li>
+                  </ul>
+                </div>
+                
+                <div className="p-4 bg-yellow-50 rounded-lg">
+                  <h3 className="font-medium text-yellow-900 mb-2">Tips:</h3>
+                  <ul className="text-sm text-yellow-800 space-y-1">
+                    <li>• Make sure each question has exactly 4 options</li>
+                    <li>• Verify correct answers are properly marked</li>
+                    <li>• Remove any extra formatting or numbering</li>
+                    <li>• Check for typos in option letters (a, b, c, d)</li>
+                  </ul>
+                </div>
               </div>
             </>
           ) : (
