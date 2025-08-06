@@ -363,28 +363,79 @@ export default function AdminPage() {
 
         {/* Example Prompts / JSON Format Guide */}
         <div className="card">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Example Prompts</h2>
-          <div className="space-y-3">
-            {examplePrompts.map((example, index) => (
-              <div
-                key={index}
-                onClick={() => !loading && setPrompt(example)}
-                className="p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors duration-200 text-sm text-gray-700"
-              >
-                {example}
+          {activeTab === 'generate' ? (
+            <>
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Example Prompts</h2>
+              <div className="space-y-3">
+                {examplePrompts.map((example, index) => (
+                  <div
+                    key={index}
+                    onClick={() => !loading && setPrompt(example)}
+                    className="p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors duration-200 text-sm text-gray-700"
+                  >
+                    {example}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <h3 className="font-medium text-blue-900 mb-2">Tips for Better Prompts:</h3>
-            <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Be specific about the topic and difficulty level</li>
-              <li>• Mention the number of questions you want</li>
-              <li>• Specify question type (multiple choice, true/false)</li>
-              <li>• Include context like "for high school students" if needed</li>
-            </ul>
-          </div>
+              
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                <h3 className="font-medium text-blue-900 mb-2">Tips for Better Prompts:</h3>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• Be specific about the topic and difficulty level</li>
+                  <li>• Mention the number of questions you want</li>
+                  <li>• Specify question type (multiple choice, true/false, enumeration)</li>
+                  <li>• Include context like "for high school students" if needed</li>
+                </ul>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">JSON Format Guide</h2>
+              
+              <div className="space-y-4">
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <h3 className="font-medium text-gray-900 mb-2">Required JSON Structure:</h3>
+                  <pre className="text-xs text-gray-700 overflow-x-auto">
+{`{
+  "title": "Quiz Title",
+  "description": "Quiz Description",
+  "questions": [
+    {
+      "question": "Question text?",
+      "type": "multiple-choice",
+      "options": ["A", "B", "C", "D"],
+      "correctAnswer": "A"
+    },
+    {
+      "question": "True/False question?",
+      "type": "true-false",
+      "options": ["True", "False"],
+      "correctAnswer": "True"
+    },
+    {
+      "question": "List three items:",
+      "type": "enumeration",
+      "options": [],
+      "correctAnswer": ["Item 1", "Item 2", "Item 3"]
+    }
+  ]
+}`}
+                  </pre>
+                </div>
+                
+                <div className="p-4 bg-yellow-50 rounded-lg">
+                  <h3 className="font-medium text-yellow-900 mb-2">Important Notes:</h3>
+                  <ul className="text-sm text-yellow-800 space-y-1">
+                    <li>• File must contain 10-100 questions</li>
+                    <li>• Supported types: "multiple-choice", "true-false", "enumeration"</li>
+                    <li>• For enumeration: correctAnswer should be an array</li>
+                    <li>• For others: correctAnswer should be a string</li>
+                    <li>• All fields are required for each question</li>
+                  </ul>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
