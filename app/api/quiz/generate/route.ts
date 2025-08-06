@@ -102,6 +102,10 @@ Do not include any text before or after the JSON.`
       if (!question.question || !question.options || !question.correctAnswer) {
         throw new Error('Invalid question structure')
       }
+      // For generated quizzes, correctAnswer should always be a string
+      if (typeof question.correctAnswer !== 'string') {
+        throw new Error(`Generated quiz questions must have a single correct answer (string), got: ${typeof question.correctAnswer}`)
+      }
       if (!question.options.includes(question.correctAnswer)) {
         throw new Error(`Correct answer "${question.correctAnswer}" not found in options for question: "${question.question}"`)
       }

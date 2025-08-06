@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CheckCircle, XCircle, Download, RefreshCw, Play, BookOpen, Users, ArrowLeft } from 'lucide-react'
+import { CheckCircle, XCircle, RefreshCw, Play, BookOpen, Users, ArrowLeft } from 'lucide-react'
 import { Question, QuizResult, Quiz } from '../types'
 import Link from 'next/link'
 
@@ -85,7 +85,8 @@ export default function TakeQuizPage() {
       result => result.quizId === quiz.id && result.userName.toLowerCase() === userName.toLowerCase()
     )
     
-    if (userResult && userResult.isApproved) {
+    // Only show results if user has completed the quiz and it's approved
+    if (userResult && userResult.isApproved && userResult.detailedAnswers.length === quiz.questions.length) {
       setSelectedQuiz(quiz)
       setQuestions(quiz.questions)
       setQuizTitle(quiz.title)
@@ -100,10 +101,14 @@ export default function TakeQuizPage() {
         reconstructedAnswers[index] = detail.userAnswer
       })
       setAnswers(reconstructedAnswers)
+    } else {
+      // If no complete result exists, user must start the quiz from beginning
+      alert('You must complete the entire quiz to view results. Please start the quiz again.')
     }
   }
 
   const backToQuizList = () => {
+    // Clear all quiz state to force users to start over
     setCurrentView('quizList')
     setSelectedQuiz(null)
     setQuestions([])
@@ -118,6 +123,7 @@ export default function TakeQuizPage() {
       country: '',
       gender: ''
     })
+    setUserName('Anonymous User')
   }
 
   const handleUserInfoSubmit = () => {
@@ -149,6 +155,13 @@ export default function TakeQuizPage() {
   }
 
   const handleSubmit = () => {
+    // Check if all questions are answered
+    const allAnswered = Object.keys(answers).length === questions.length
+    if (!allAnswered) {
+      alert('Please answer all questions before submitting the quiz.')
+      return
+    }
+    
     try {
       setLoading(true)
       
@@ -207,74 +220,7 @@ export default function TakeQuizPage() {
     }
   }
 
-  const handleDownloadResults = async (format: 'pdf' | 'csv') => {
-    try {
-      if (!result || !selectedQuiz) return
-      
-      let content = ''
-      let mimeType = ''
-      let fileExtension: string = format
-      
-      if (format === 'csv') {
-        // Generate CSV content
-        const headers = ['Question', 'Your Answer', 'Correct Answer', 'Result']
-        const csvRows = [headers.join(',')]
-        
-        result.detailedAnswers.forEach((answerDetail, index) => {
-          const question = selectedQuiz.questions[index]
-          if (question && answerDetail) {
-            const row = [
-              '"' + question.question.replace(/"/g, '""') + '"',
-              '"' + answerDetail.userAnswer.replace(/"/g, '""') + '"',
-              '"' + (Array.isArray(question.correctAnswer) ? question.correctAnswer.join(', ') : question.correctAnswer.toString()).replace(/"/g, '""') + '"',
-              answerDetail.isCorrect ? 'Correct' : 'Incorrect'
-            ]
-            csvRows.push(row.join(','))
-          }
-        })
-        
-        csvRows.push('')
-        csvRows.push(`Total Score,${result.score},${result.totalQuestions},${((result.score / result.totalQuestions) * 100).toFixed(1)}%`)
-        
-        content = csvRows.join('\n')
-        mimeType = 'text/csv'
-      } else {
-        // Generate simple text content for PDF (since we can't generate actual PDF client-side easily)
-        content = `Quiz Results for ${userName}\n\n`
-        content += `Quiz: ${selectedQuiz.title || 'Unknown Quiz'}\n`
-        content += `Date: ${new Date(result.submittedAt).toLocaleDateString()}\n`
-        content += `Score: ${result.score}/${result.totalQuestions} (${((result.score / result.totalQuestions) * 100).toFixed(1)}%)\n\n`
-        content += 'Detailed Results:\n'
-        content += '='.repeat(50) + '\n\n'
-        
-        result.detailedAnswers.forEach((answerDetail, index) => {
-          const question = selectedQuiz.questions[index]
-          if (question && answerDetail) {
-            content += `Question ${index + 1}: ${question.question}\n`
-            content += `Your Answer: ${answerDetail.userAnswer}\n`
-            content += `Correct Answer: ${Array.isArray(question.correctAnswer) ? question.correctAnswer.join(', ') : question.correctAnswer}\n`
-            content += `Result: ${answerDetail.isCorrect ? 'Correct ✓' : 'Incorrect ✗'}\n\n`
-          }
-        })
-        
-        mimeType = 'text/plain'
-        fileExtension = 'txt' // Change extension since we're generating text, not PDF
-      }
-      
-      // Create and download file
-      const blob = new Blob([content], { type: mimeType })
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `quiz-results-${userName}.${fileExtension}`
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
-    } catch (error) {
-      console.error('Error downloading results:', error)
-    }
-  }
+
 
   // Loading state
   if (loading && currentView === 'quizList') {
@@ -593,21 +539,7 @@ export default function TakeQuizPage() {
             })}
           </div>
 
-          <div className="flex flex-wrap gap-4 justify-center">
-            <button
-              onClick={() => handleDownloadResults('pdf')}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
-            >
-              <Download className="w-4 h-4" />
-              Download PDF
-            </button>
-            <button
-              onClick={() => handleDownloadResults('csv')}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg"
-            >
-              <Download className="w-4 h-4" />
-              Download CSV
-            </button>
+          <div className="flex justify-center">
             <button
               onClick={backToQuizList}
               className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg"

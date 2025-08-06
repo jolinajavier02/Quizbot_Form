@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       // If it's already a complete Quiz object, use it directly
       if (jsonData.id && jsonData.title && jsonData.questions) {
         quizData = jsonData as Quiz
-        title = quizData.title
+        title = quizData.title || 'Untitled Quiz'
         description = quizData.description || ''
       } else {
         return NextResponse.json(
@@ -30,8 +30,8 @@ export async function POST(request: NextRequest) {
     else if (contentType.includes('multipart/form-data')) {
       const formData = await request.formData()
       const file = formData.get('file') as File
-      title = formData.get('title') as string
-      description = formData.get('description') as string
+      title = (formData.get('title') as string) || 'Uploaded Quiz'
+      description = (formData.get('description') as string) || ''
 
       if (!file) {
         return NextResponse.json(
