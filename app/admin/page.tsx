@@ -1,30 +1,86 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Send, Loader2, CheckCircle, AlertCircle, Upload, FileText, Clipboard, Users, Calendar, Trophy, Eye } from 'lucide-react'
+import { Send, Loader2, CheckCircle, AlertCircle, Upload, FileText, Clipboard, Users, Calendar, Trophy, Eye, MoreVertical, Edit, Archive, Plus, Lock, User } from 'lucide-react'
 import { Quiz, QuizResult } from '../types'
 
 export default function AdminPage() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [loginPassword, setLoginPassword] = useState('')
+  const [loginError, setLoginError] = useState('')
   const [pastedText, setPastedText] = useState('')
   const [loading, setLoading] = useState(false)
   const [generatedQuiz, setGeneratedQuiz] = useState<Quiz | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const [activeTab, setActiveTab] = useState<'paste' | 'upload' | 'submissions'>('paste')
+  const [activeTab, setActiveTab] = useState<'quizzes' | 'submissions' | 'create'>('quizzes')
   const [submissions, setSubmissions] = useState<QuizResult[]>([])
   const [submissionsLoading, setSubmissionsLoading] = useState(false)
   const [selectedSubmission, setSelectedSubmission] = useState<QuizResult | null>(null)
-  const [uploadFile, setUploadFile] = useState<File | null>(null)
-  const [uploadTitle, setUploadTitle] = useState('')
-  const [uploadDescription, setUploadDescription] = useState('')
-  const [uploadLoading, setUploadLoading] = useState(false)
   const [quizTitle, setQuizTitle] = useState('')
   const [quizDescription, setQuizDescription] = useState('')
+  const [quizzes, setQuizzes] = useState<Quiz[]>([])
+  const [doneQuizzes, setDoneQuizzes] = useState<Quiz[]>([])
+  const [editingQuiz, setEditingQuiz] = useState<Quiz | null>(null)
+  const [showDropdown, setShowDropdown] = useState<string | null>(null)
+  const [chatGptPrompt, setChatGptPrompt] = useState('')
+  const [generatingWithAI, setGeneratingWithAI] = useState(false)
+
+  // Admin password (in a real app, this would be handled securely)
+  const ADMIN_PASSWORD = 'admin123'
+
+  useEffect(() => {
+    // Check if admin is already logged in
+    const adminLoggedIn = localStorage.getItem('adminLoggedIn')
+    if (adminLoggedIn === 'true') {
+      setIsLoggedIn(true)
+      loadQuizzes()
+      loadSubmissions()
+    }
+  }, [])
+
+  const handleLogin = () => {
+    if (loginPassword === ADMIN_PASSWORD) {
+      setIsLoggedIn(true)
+      setLoginError('')
+      localStorage.setItem('adminLoggedIn', 'true')
+      loadQuizzes()
+      loadSubmissions()
+    } else {
+      setLoginError('Invalid password. Please try again.')
+    }
+  }
+
+  const handleLogout = () => {
+    setIsLoggedIn(false)
+    localStorage.removeItem('adminLoggedIn')
+    setLoginPassword('')
+  }
+
+  const loadQuizzes = () => {
+    try {
+      const storedQuizzes = localStorage.getItem('quizzes')
+      const storedDoneQuizzes = localStorage.getItem('doneQuizzes')
+      
+      if (storedQuizzes) {
+        const quizzesData = JSON.parse(storedQuizzes)
+        setQuizzes(Array.isArray(quizzesData) ? quizzesData : [])
+      }
+      
+      if (storedDoneQuizzes) {
+        const doneQuizzesData = JSON.parse(storedDoneQuizzes)
+        setDoneQuizzes(Array.isArray(doneQuizzesData) ? doneQuizzesData : [])
+      }
+    } catch (error) {
+      console.error('Error loading quizzes:', error)
+      setQuizzes([])
+      setDoneQuizzes([])
+    }
+  }
 
   const loadSubmissions = () => {
     try {
       setSubmissionsLoading(true)
-      // Load submissions from localStorage
       const storedResults = localStorage.getItem('quizResults')
       if (storedResults) {
         const results = JSON.parse(storedResults)
@@ -58,9 +114,8 @@ export default function AdminPage() {
         })
         
         localStorage.setItem('quizResults', JSON.stringify(updatedResults))
-        
-        // Update local state
         setSubmissions(updatedResults)
+        
         if (selectedSubmission && selectedSubmission.id === submissionId) {
           setSelectedSubmission({
             ...selectedSubmission,
@@ -80,12 +135,6 @@ export default function AdminPage() {
     }
   }
 
-  useEffect(() => {
-    if (activeTab === 'submissions') {
-      loadSubmissions()
-    }
-  }, [activeTab])
-
   const parseQuizFromText = (text: string) => {
     const lines = text.split('\n').filter(line => line.trim())
     const questions = []
@@ -96,12 +145,9 @@ export default function AdminPage() {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim()
       
-      // Skip part headers and empty lines
       if (line.startsWith('Part ') || line === '') continue
       
-      // Check if it's a question (doesn't start with a), b), c), d) or ✅)
       if (!line.match(/^[a-d]\)/) && !line.startsWith('✅')) {
-        // Save previous question if exists
         if (currentQuestion && currentOptions.length > 0 && correctAnswer) {
           questions.push({
              id: `q${questions.length + 1}`,
@@ -112,27 +158,23 @@ export default function AdminPage() {
            })
         }
         
-        // Start new question
         currentQuestion = line
         currentOptions = []
         correctAnswer = ''
       }
-      // Check if it's an option
       else if (line.match(/^[a-d]\)/)) {
         const option = line.substring(3).trim()
         currentOptions.push(option)
       }
-      // Check if it's the correct answer
       else if (line.startsWith('✅ Correct Answer:')) {
         const answerLetter = line.split(':')[1].trim()
-        const answerIndex = answerLetter.charCodeAt(0) - 97 // Convert a,b,c,d to 0,1,2,3
+        const answerIndex = answerLetter.charCodeAt(0) - 97
         if (answerIndex >= 0 && answerIndex < currentOptions.length) {
           correctAnswer = currentOptions[answerIndex]
         }
       }
     }
     
-    // Add the last question
     if (currentQuestion && currentOptions.length > 0 && correctAnswer) {
       questions.push({
          id: `q${questions.length + 1}`,
@@ -147,13 +189,13 @@ export default function AdminPage() {
   }
 
   const handleCreateQuiz = () => {
-    if (!pastedText.trim()) {
-      setError('Please paste your quiz content.')
+    if (!quizTitle.trim()) {
+      setError('Please enter a quiz title.')
       return
     }
 
-    if (!quizTitle.trim()) {
-      setError('Please enter a quiz title.')
+    if (!pastedText.trim()) {
+      setError('Please paste your quiz content.')
       return
     }
 
@@ -171,25 +213,36 @@ export default function AdminPage() {
       }
       
       const quiz: Quiz = {
-        id: `quiz_${Date.now()}`,
+        id: editingQuiz ? editingQuiz.id : `quiz_${Date.now()}`,
         title: quizTitle.trim(),
         description: quizDescription.trim() || 'Quiz created from pasted content',
         questions: questions,
-        createdAt: new Date().toISOString(),
+        createdAt: editingQuiz ? editingQuiz.createdAt : new Date().toISOString(),
         createdBy: 'admin'
       }
 
-      // Save to localStorage
       const existingQuizzes = localStorage.getItem('quizzes')
-      const quizzes = existingQuizzes ? JSON.parse(existingQuizzes) : []
-      quizzes.push(quiz)
-      localStorage.setItem('quizzes', JSON.stringify(quizzes))
-
+      let quizzesArray = existingQuizzes ? JSON.parse(existingQuizzes) : []
+      
+      if (editingQuiz) {
+        // Update existing quiz
+        quizzesArray = quizzesArray.map((q: Quiz) => q.id === editingQuiz.id ? quiz : q)
+        setSuccess(`Quiz "${quiz.title}" updated successfully!`)
+      } else {
+        // Create new quiz
+        quizzesArray.push(quiz)
+        setSuccess(`Quiz "${quiz.title}" created successfully with ${quiz.questions.length} questions!`)
+      }
+      
+      localStorage.setItem('quizzes', JSON.stringify(quizzesArray))
+      setQuizzes(quizzesArray)
+      
       setGeneratedQuiz(quiz)
-      setSuccess(`Quiz "${quiz.title}" created successfully with ${quiz.questions.length} questions!`)
       setPastedText('')
       setQuizTitle('')
       setQuizDescription('')
+      setEditingQuiz(null)
+      setActiveTab('quizzes')
     } catch (error) {
       console.error('Error creating quiz:', error)
       setError('An error occurred while creating the quiz. Please try again.')
@@ -198,520 +251,525 @@ export default function AdminPage() {
     }
   }
 
-  const handleFileUpload = async () => {
-    if (!uploadFile) {
-      setError('Please select a JSON file to upload.')
+  const handleGenerateWithChatGPT = async () => {
+    if (!chatGptPrompt.trim()) {
+      setError('Please enter a prompt for ChatGPT.')
       return
     }
 
+    setGeneratingWithAI(true)
+    setError('')
+    
+    // Simulate ChatGPT API call (in a real app, you'd call the actual API)
+    setTimeout(() => {
+      const sampleQuiz = `What is the capital of France?
+a) London
+b) Berlin
+c) Paris
+d) Madrid
+✅ Correct Answer: c
+
+Which planet is known as the Red Planet?
+a) Venus
+b) Mars
+c) Jupiter
+d) Saturn
+✅ Correct Answer: b`
+      
+      setPastedText(sampleQuiz)
+      setQuizTitle(`AI Generated Quiz: ${chatGptPrompt.slice(0, 50)}...`)
+      setQuizDescription(`Generated from prompt: ${chatGptPrompt}`)
+      setChatGptPrompt('')
+      setGeneratingWithAI(false)
+      setSuccess('Quiz generated successfully! Review and create it below.')
+    }, 2000)
+  }
+
+  const handleEditQuiz = (quiz: Quiz) => {
+    setEditingQuiz(quiz)
+    setQuizTitle(quiz.title)
+    setQuizDescription(quiz.description)
+    
+    // Convert quiz back to text format
+    const textFormat = quiz.questions.map((q, index) => {
+      const questionText = q.question
+      const optionsText = q.options?.map((opt, i) => `${String.fromCharCode(97 + i)}) ${opt}`).join('\n') || ''
+      const correctIndex = q.options?.indexOf(q.correctAnswer as string) || 0
+      const correctLetter = String.fromCharCode(97 + correctIndex)
+      return `${questionText}\n${optionsText}\n✅ Correct Answer: ${correctLetter}`
+    }).join('\n\n')
+    
+    setPastedText(textFormat)
+    setActiveTab('create')
+    setShowDropdown(null)
+  }
+
+  const handleMarkAsDone = (quizId: string) => {
     try {
-      setUploadLoading(true)
-      setError('')
-      setSuccess('')
-      
-      // Read file content
-      const fileContent = await uploadFile.text()
-      const jsonData = JSON.parse(fileContent)
-      
-      // Validate JSON structure
-      if (!jsonData.questions || !Array.isArray(jsonData.questions)) {
-        setError('Invalid JSON format. Missing questions array.')
-        setUploadLoading(false)
-        return
+      const quizToMove = quizzes.find(q => q.id === quizId)
+      if (quizToMove) {
+        const updatedQuizzes = quizzes.filter(q => q.id !== quizId)
+        const updatedDoneQuizzes = [...doneQuizzes, quizToMove]
+        
+        setQuizzes(updatedQuizzes)
+        setDoneQuizzes(updatedDoneQuizzes)
+        
+        localStorage.setItem('quizzes', JSON.stringify(updatedQuizzes))
+        localStorage.setItem('doneQuizzes', JSON.stringify(updatedDoneQuizzes))
+        
+        setSuccess('Quiz moved to Done section!')
+        setTimeout(() => setSuccess(''), 3000)
       }
-      
-      if (jsonData.questions.length < 10 || jsonData.questions.length > 100) {
-        setError('Quiz must contain between 10 and 100 questions.')
-        setUploadLoading(false)
-        return
-      }
-      
-      // Create quiz object
-      const quiz: Quiz = {
-        id: `quiz_${Date.now()}`,
-        title: uploadTitle.trim() || jsonData.title || 'Uploaded Quiz',
-        description: uploadDescription.trim() || jsonData.description || 'Quiz uploaded from JSON file',
-        questions: jsonData.questions.map((q: any, index: number) => ({
-          id: q.id || `q${index + 1}`,
-          question: q.question,
-          options: q.options || [],
-          correctAnswer: q.correctAnswer,
-          type: q.type || 'multiple-choice'
-        })),
-        createdAt: new Date().toISOString(),
-        createdBy: 'admin'
-      }
-      
-      // Save to localStorage
-      const existingQuizzes = localStorage.getItem('quizzes')
-      const quizzes = existingQuizzes ? JSON.parse(existingQuizzes) : []
-      quizzes.push(quiz)
-      localStorage.setItem('quizzes', JSON.stringify(quizzes))
-      
-      setGeneratedQuiz(quiz)
-      setSuccess(`Quiz "${quiz.title}" uploaded successfully with ${quiz.questions.length} questions!`)
-      setUploadFile(null)
-      setUploadTitle('')
-      setUploadDescription('')
-      // Reset file input
-      const fileInput = document.getElementById('file-upload') as HTMLInputElement
-      if (fileInput) fileInput.value = ''
     } catch (error) {
-      console.error('Error uploading quiz:', error)
-      if (error instanceof SyntaxError) {
-        setError('Invalid JSON file format. Please check your file.')
-      } else {
-        setError('An error occurred while uploading the quiz. Please try again.')
+      console.error('Error marking quiz as done:', error)
+      setError('Failed to mark quiz as done.')
+      setTimeout(() => setError(''), 3000)
+    }
+    setShowDropdown(null)
+  }
+
+  const handleRestoreQuiz = (quizId: string) => {
+    try {
+      const quizToRestore = doneQuizzes.find(q => q.id === quizId)
+      if (quizToRestore) {
+        const updatedDoneQuizzes = doneQuizzes.filter(q => q.id !== quizId)
+        const updatedQuizzes = [...quizzes, quizToRestore]
+        
+        setDoneQuizzes(updatedDoneQuizzes)
+        setQuizzes(updatedQuizzes)
+        
+        localStorage.setItem('doneQuizzes', JSON.stringify(updatedDoneQuizzes))
+        localStorage.setItem('quizzes', JSON.stringify(updatedQuizzes))
+        
+        setSuccess('Quiz restored to active quizzes!')
+        setTimeout(() => setSuccess(''), 3000)
       }
-    } finally {
-      setUploadLoading(false)
+    } catch (error) {
+      console.error('Error restoring quiz:', error)
+      setError('Failed to restore quiz.')
+      setTimeout(() => setError(''), 3000)
     }
   }
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      if (!file.name.endsWith('.json')) {
-        setError('Please select a JSON file.')
-        return
-      }
-      setUploadFile(file)
-      setError('')
-    }
+  // Login screen
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <Lock className="mx-auto h-12 w-12 text-gray-400" />
+            <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Admin Access</h2>
+            <p className="mt-2 text-sm text-gray-600">Enter the admin password to continue</p>
+          </div>
+          <div className="mt-8 space-y-6">
+            <div>
+              <label htmlFor="password" className="sr-only">Password</label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="Admin password"
+              />
+            </div>
+            {loginError && (
+              <div className="text-red-600 text-sm text-center">{loginError}</div>
+            )}
+            <div>
+              <button
+                onClick={handleLogin}
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <User className="w-4 h-4 mr-2" />
+                Sign in as Admin
+              </button>
+            </div>
+            <div className="text-xs text-gray-500 text-center">
+              Demo password: admin123
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Quiz Generator Admin</h1>
-        <p className="text-gray-600">
-          Generate interactive quizzes using AI or upload from JSON files.
-        </p>
-      </div>
-
-      {/* Tab Navigation */}
-      <div className="mb-8">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
-            <button
-              onClick={() => setActiveTab('paste')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'paste'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <Clipboard className="w-4 h-4 inline mr-2" />
-              Paste Quiz
-            </button>
-            <button
-              onClick={() => setActiveTab('upload')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'upload'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <Upload className="w-4 h-4 inline mr-2" />
-              File Upload
-            </button>
-            <button
-              onClick={() => setActiveTab('submissions')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'submissions'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <Users className="w-4 h-4 inline mr-2" />
-              View Submissions
-            </button>
-          </nav>
+    <div className="max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
+          <p className="text-xl text-gray-600">Manage quizzes and review submissions</p>
         </div>
+        <button
+          onClick={handleLogout}
+          className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg"
+        >
+          Logout
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Quiz Generation/Upload Form */}
-        <div className="card">
-          {activeTab === 'paste' ? (
-            <>
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Create Quiz from Pasted Content</h2>
-          
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <label htmlFor="quiz-title" className="block text-sm font-medium text-gray-700 mb-2">
-                  Quiz Title *
-                </label>
-                <input
-                  id="quiz-title"
-                  type="text"
-                  value={quizTitle}
-                  onChange={(e) => setQuizTitle(e.target.value)}
-                  className="input-field"
-                  placeholder="Enter quiz title"
-                  disabled={loading}
-                />
-              </div>
+      {/* Success/Error Messages */}
+      {success && (
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+          <CheckCircle className="w-5 h-5 text-green-600" />
+          <span className="text-green-800">{success}</span>
+        </div>
+      )}
+      
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+          <AlertCircle className="w-5 h-5 text-red-600" />
+          <span className="text-red-800">{error}</span>
+        </div>
+      )}
 
-              <div>
-                <label htmlFor="quiz-description" className="block text-sm font-medium text-gray-700 mb-2">
-                  Quiz Description (Optional)
-                </label>
-                <textarea
-                  id="quiz-description"
-                  value={quizDescription}
-                  onChange={(e) => setQuizDescription(e.target.value)}
-                  className="input-field h-20 resize-none"
-                  placeholder="Enter quiz description"
-                  disabled={loading}
-                />
-              </div>
-            </div>
+      {/* Tabs */}
+      <div className="border-b border-gray-200 mb-8">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('quizzes')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'quizzes'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <FileText className="w-4 h-4 inline mr-2" />
+            Quiz Management
+          </button>
+          <button
+            onClick={() => setActiveTab('submissions')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'submissions'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <Users className="w-4 h-4 inline mr-2" />
+            Submissions ({submissions.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('create')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'create'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <Plus className="w-4 h-4 inline mr-2" />
+            Create Quiz
+          </button>
+        </nav>
+      </div>
 
-            <div>
-              <label htmlFor="pasted-text" className="block text-sm font-medium text-gray-700 mb-2">
-                Quiz Content *
-              </label>
-              <textarea
-                id="pasted-text"
-                value={pastedText}
-                onChange={(e) => setPastedText(e.target.value)}
-                className="input-field h-64 resize-none font-mono text-sm"
-                placeholder="Paste your quiz content here...\n\nExample format:\nPart 1\n\nWhat is the capital of France?\na) London\nb) Berlin\nc) Paris\nd) Madrid\n✅ Correct Answer: c"
-                disabled={loading}
-              />
-            </div>
-
-            <button
-              onClick={handleCreateQuiz}
-              disabled={loading || !pastedText.trim() || !quizTitle.trim()}
-              className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating Quiz...
-                </>
-              ) : (
-                <>
-                  <Clipboard className="w-4 h-4" />
-                  Create Quiz
-                </>
-              )}
-            </button>
-
-            {error && (
-              <div className="flex items-center gap-2 p-3 bg-error-50 border border-error-200 rounded-lg text-error-700">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                <span className="text-sm">{error}</span>
-              </div>
-            )}
-
-            {success && (
-              <div className="flex items-center gap-2 p-3 bg-success-50 border border-success-200 rounded-lg text-success-700">
-                <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                <span className="text-sm">{success}</span>
-              </div>
-            )}
-          </div>
-            </>
-          ) : activeTab === 'upload' ? (
-            <>
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Upload Quiz from JSON</h2>
-              
-              <div className="space-y-6">
-                <div>
-                  <label htmlFor="file-upload" className="block text-sm font-medium text-gray-700 mb-2">
-                    JSON File *
-                  </label>
-                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-gray-400 transition-colors">
-                    <div className="space-y-1 text-center">
-                      <FileText className="mx-auto h-12 w-12 text-gray-400" />
-                      <div className="flex text-sm text-gray-600">
-                        <label
-                          htmlFor="file-upload"
-                          className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
-                        >
-                          <span>Upload a file</span>
-                          <input
-                            id="file-upload"
-                            name="file-upload"
-                            type="file"
-                            accept=".json"
-                            className="sr-only"
-                            onChange={handleFileChange}
-                            disabled={uploadLoading}
-                          />
-                        </label>
-                        <p className="pl-1">or drag and drop</p>
-                      </div>
-                      <p className="text-xs text-gray-500">JSON files only, 10-100 questions</p>
-                      {uploadFile && (
-                        <p className="text-sm text-green-600 font-medium">
-                          Selected: {uploadFile.name}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <label htmlFor="upload-title" className="block text-sm font-medium text-gray-700 mb-2">
-                      Quiz Title (Optional)
-                    </label>
-                    <input
-                      id="upload-title"
-                      type="text"
-                      value={uploadTitle}
-                      onChange={(e) => setUploadTitle(e.target.value)}
-                      className="input-field"
-                      placeholder="Override title from JSON file"
-                      disabled={uploadLoading}
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="upload-description" className="block text-sm font-medium text-gray-700 mb-2">
-                      Quiz Description (Optional)
-                    </label>
-                    <textarea
-                      id="upload-description"
-                      value={uploadDescription}
-                      onChange={(e) => setUploadDescription(e.target.value)}
-                      className="input-field h-24 resize-none"
-                      placeholder="Override description from JSON file"
-                      disabled={uploadLoading}
-                    />
-                  </div>
-                </div>
-
+      {/* Quiz Management Tab */}
+      {activeTab === 'quizzes' && (
+        <div className="space-y-8">
+          {/* Active Quizzes */}
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Active Quizzes</h2>
+            {quizzes.length === 0 ? (
+              <div className="text-center py-12 bg-white rounded-lg border">
+                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No active quizzes</h3>
+                <p className="text-gray-600 mb-4">Create your first quiz to get started.</p>
                 <button
-                  onClick={handleFileUpload}
-                  disabled={uploadLoading || !uploadFile}
-                  className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+                  onClick={() => setActiveTab('create')}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
                 >
-                  {uploadLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Uploading Quiz...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-4 h-4" />
-                      Upload Quiz
-                    </>
-                  )}
+                  <Plus className="w-4 h-4" />
+                  Create Quiz
                 </button>
-
-                {error && (
-                  <div className="flex items-center gap-2 p-3 bg-error-50 border border-error-200 rounded-lg text-error-700">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                    <span className="text-sm">{error}</span>
-                  </div>
-                )}
-
-                {success && (
-                  <div className="flex items-center gap-2 p-3 bg-success-50 border border-success-200 rounded-lg text-success-700">
-                    <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                    <span className="text-sm">{success}</span>
-                  </div>
-                )}
               </div>
-            </>
-          ) : (
-            <>
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Quiz Submissions</h2>
-              
-              {submissionsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-primary-600" />
-                  <span className="ml-2 text-gray-600">Loading submissions...</span>
-                </div>
-              ) : submissions.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p>No quiz submissions yet.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {submissions.map((submission) => (
-                    <div key={submission.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-medium text-gray-900">{submission.quizTitle || 'Untitled Quiz'}</h3>
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${
-                            submission.isApproved 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {submission.isApproved ? 'Approved' : 'Pending'}
-                          </span>
-                          <Trophy className="w-4 h-4 text-yellow-500" />
-                          <span className="text-sm font-medium text-gray-700">{submission.percentage}%</span>
-                        </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {quizzes.map((quiz) => (
+                  <div key={quiz.id} className="bg-white rounded-lg p-6 shadow-sm border">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">{quiz.title}</h3>
+                        <p className="text-gray-600 text-sm mb-3 line-clamp-2">{quiz.description}</p>
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          <span>{new Date(submission.submittedAt).toLocaleDateString()}</span>
-                        </div>
-                        <span>By: {submission.userName}</span>
-                        <span>Score: {submission.score}/{submission.totalQuestions}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
+                      <div className="relative">
                         <button
-                          onClick={() => setSelectedSubmission(submission)}
-                          className="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center gap-1"
+                          onClick={() => setShowDropdown(showDropdown === quiz.id ? null : quiz.id)}
+                          className="p-1 text-gray-400 hover:text-gray-600"
                         >
-                          <Eye className="w-4 h-4" />
-                          View Details
+                          <MoreVertical className="w-5 h-5" />
                         </button>
-                        {!submission.isApproved && (
-                          <button
-                            onClick={() => handleApproveSubmission(submission.id)}
-                            className="text-green-600 hover:text-green-700 text-sm font-medium px-3 py-1 border border-green-300 rounded hover:bg-green-50"
-                          >
-                            Approve
-                          </button>
+                        {showDropdown === quiz.id && (
+                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border z-10">
+                            <button
+                              onClick={() => handleEditQuiz(quiz)}
+                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                            >
+                              <Edit className="w-4 h-4" />
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleMarkAsDone(quiz.id)}
+                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                            >
+                              <Archive className="w-4 h-4" />
+                              Mark as Done
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </>
+                    
+                    <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                      <span>{quiz.questions.length} questions</span>
+                      <span>{new Date(quiz.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    
+                    <a
+                      href="/take-quiz"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                    >
+                      <Eye className="w-4 h-4" />
+                      View Quiz
+                    </a>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Done Quizzes */}
+          {doneQuizzes.length > 0 && (
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Done Quizzes</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {doneQuizzes.map((quiz) => (
+                  <div key={quiz.id} className="bg-gray-50 rounded-lg p-6 shadow-sm border">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-700 mb-2">{quiz.title}</h3>
+                        <p className="text-gray-500 text-sm mb-3 line-clamp-2">{quiz.description}</p>
+                      </div>
+                      <span className="px-2 py-1 bg-gray-200 text-gray-600 text-xs rounded-full">Done</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                      <span>{quiz.questions.length} questions</span>
+                      <span>{new Date(quiz.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    
+                    <button
+                      onClick={() => handleRestoreQuiz(quiz.id)}
+                      className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                    >
+                      Restore to Active
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
+      )}
 
-        {/* Right Panel */}
-        <div className="card">
-          {activeTab === 'submissions' ? (
-            <>
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Submission Details</h2>
-              
-              {selectedSubmission ? (
-                <div className="space-y-6">
-                  <div className="border-b border-gray-200 pb-4">
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">{selectedSubmission.quizTitle}</h3>
-                    {selectedSubmission.quizDescription && (
-                      <p className="text-gray-600 mb-3">{selectedSubmission.quizDescription}</p>
-                    )}
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span>Submitted by: <strong>{selectedSubmission.userName}</strong></span>
-                      <span>Date: {new Date(selectedSubmission.submittedAt).toLocaleString()}</span>
-                    </div>
-                    <div className="mt-2 flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <Trophy className="w-5 h-5 text-yellow-500" />
-                        <span className="text-lg font-semibold text-gray-900">
-                          {selectedSubmission.score}/{selectedSubmission.totalQuestions}
-                        </span>
-                        <span className="text-sm text-gray-600">({selectedSubmission.percentage}%)</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Approval Status */}
-                  <div className="border border-gray-200 rounded-lg p-4 mb-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-900">Approval Status:</span>
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          selectedSubmission.isApproved 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {selectedSubmission.isApproved ? 'Approved' : 'Pending Review'}
-                        </span>
-                      </div>
-                      {!selectedSubmission.isApproved && (
-                        <button
-                          onClick={() => handleApproveSubmission(selectedSubmission.id)}
-                          className="btn-primary text-sm px-4 py-2"
-                        >
-                          Approve Results
-                        </button>
-                      )}
-                    </div>
-                    {selectedSubmission.isApproved && selectedSubmission.approvedAt && (
-                      <div className="mt-2 text-sm text-gray-600">
-                        Approved on {new Date(selectedSubmission.approvedAt).toLocaleString()}
-                        {selectedSubmission.approvedBy && ` by ${selectedSubmission.approvedBy}`}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-4">
-                    <h4 className="font-medium text-gray-900">Question Details:</h4>
-                    {selectedSubmission.detailedAnswers?.map((answer, index) => (
-                      <div key={index} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-start gap-3 mb-3">
-                          {answer.isCorrect ? (
-                            <CheckCircle className="w-5 h-5 text-success-500 mt-0.5 flex-shrink-0" />
-                          ) : (
-                            <AlertCircle className="w-5 h-5 text-error-500 mt-0.5 flex-shrink-0" />
-                          )}
-                          <div className="flex-1">
-                            <h5 className="font-medium text-gray-900 mb-2">
-                              {index + 1}. {answer.question}
-                            </h5>
-                            <div className="space-y-1 text-sm">
-                              <div className="text-gray-600">
-                                <span className="font-medium">User Answer: </span>
-                                <span className={answer.isCorrect ? 'text-success-700' : 'text-error-700'}>
-                                  {Array.isArray(answer.userAnswer) ? answer.userAnswer.join(', ') : answer.userAnswer}
-                                </span>
-                              </div>
-                              {!answer.isCorrect && (
-                                <div className="text-gray-600">
-                                  <span className="font-medium">Correct Answer: </span>
-                                  <span className="text-success-700">
-                                    {Array.isArray(answer.correctAnswer) ? answer.correctAnswer.join(', ') : answer.correctAnswer}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <div className={`px-2 py-1 rounded text-xs font-medium ${
-                            answer.isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                          }`}>
-                            {answer.isCorrect ? 'Correct' : 'Incorrect'}
-                          </div>
-                        </div>
-                      </div>
-                    )) || (
-                      <p className="text-gray-500 text-center py-4">No detailed answers available for this submission.</p>
-                    )}
-                  </div>
-                  
-                  <button
-                    onClick={() => setSelectedSubmission(null)}
-                    className="btn-secondary w-full"
-                  >
-                    Back to Submissions
-                  </button>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <Eye className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p>Select a submission to view details.</p>
-                </div>
-              )}
-            </>
+      {/* Submissions Tab */}
+      {activeTab === 'submissions' && (
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Quiz Submissions</h2>
+          
+          {submissionsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            </div>
+          ) : submissions.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-lg border">
+              <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No submissions yet</h3>
+              <p className="text-gray-600">Quiz submissions will appear here once users start taking quizzes.</p>
+            </div>
           ) : (
-            <>
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Example Prompts / JSON Format Guide</h2>
-              
-              {activeTab === 'paste' ? (
-                <div className="space-y-6">
-                  <div className="p-4 bg-blue-50 rounded-lg">
-                    <h3 className="font-medium text-blue-900 mb-2">Example Quiz Format:</h3>
-                    <pre className="text-sm text-blue-800 whitespace-pre-wrap font-mono">
-{`Part 1
+            <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quiz</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {submissions.map((submission) => (
+                      <tr key={submission.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{submission.quizTitle}</div>
+                          <div className="text-sm text-gray-500">{submission.totalQuestions} questions</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{submission.userName}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {submission.score}/{submission.totalQuestions}
+                          </div>
+                          <div className="text-sm text-gray-500">{submission.percentage}%</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(submission.submittedAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {submission.isApproved ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              Approved
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                              <AlertCircle className="w-3 h-3 mr-1" />
+                              Pending
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                          <button
+                            onClick={() => setSelectedSubmission(submission)}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            View Details
+                          </button>
+                          {!submission.isApproved && (
+                            <button
+                              onClick={() => handleApproveSubmission(submission.id)}
+                              className="text-green-600 hover:text-green-900"
+                            >
+                              Approve
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
-What is the capital of France?
+      {/* Create Quiz Tab */}
+      {activeTab === 'create' && (
+        <div className="space-y-8">
+          <div className="bg-white rounded-lg p-6 shadow-sm border">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+              {editingQuiz ? 'Edit Quiz' : 'Create New Quiz'}
+            </h2>
+            
+            {/* AI Generation Section */}
+            <div className="mb-8 p-4 bg-blue-50 rounded-lg">
+              <h3 className="text-lg font-semibold text-blue-900 mb-4">Generate with ChatGPT</h3>
+              <div className="space-y-4">
+                <textarea
+                  value={chatGptPrompt}
+                  onChange={(e) => setChatGptPrompt(e.target.value)}
+                  placeholder="Enter a prompt to generate quiz questions (e.g., 'Create 5 questions about JavaScript basics')..."
+                  className="w-full px-4 py-3 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  rows={3}
+                />
+                <button
+                  onClick={handleGenerateWithChatGPT}
+                  disabled={generatingWithAI || !chatGptPrompt.trim()}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {generatingWithAI ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                  {generatingWithAI ? 'Generating...' : 'Generate Questions'}
+                </button>
+              </div>
+            </div>
+            
+            {/* Manual Input Section */}
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Quiz Title *</label>
+                  <input
+                    type="text"
+                    value={quizTitle}
+                    onChange={(e) => setQuizTitle(e.target.value)}
+                    placeholder="Enter quiz title"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Quiz Description</label>
+                  <input
+                    type="text"
+                    value={quizDescription}
+                    onChange={(e) => setQuizDescription(e.target.value)}
+                    placeholder="Enter quiz description"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Quiz Content *</label>
+                <textarea
+                  value={pastedText}
+                  onChange={(e) => setPastedText(e.target.value)}
+                  placeholder="Paste your quiz content here...\n\nExample format:\nWhat is the capital of France?\na) London\nb) Berlin\nc) Paris\nd) Madrid\n✅ Correct Answer: c"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  rows={12}
+                />
+              </div>
+              
+              <div className="flex gap-4">
+                <button
+                  onClick={handleCreateQuiz}
+                  disabled={loading || !quizTitle.trim() || !pastedText.trim()}
+                  className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                  {loading ? 'Creating...' : editingQuiz ? 'Update Quiz' : 'Create Quiz'}
+                </button>
+                
+                {editingQuiz && (
+                  <button
+                    onClick={() => {
+                      setEditingQuiz(null)
+                      setQuizTitle('')
+                      setQuizDescription('')
+                      setPastedText('')
+                    }}
+                    className="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg"
+                  >
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Format Guide */}
+          <div className="bg-white rounded-lg p-6 shadow-sm border">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quiz Format Guide</h3>
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
+{`What is the capital of France?
 a) London
 b) Berlin
 c) Paris
@@ -724,141 +782,107 @@ b) Mars
 c) Jupiter
 d) Saturn
 ✅ Correct Answer: b`}
-                    </pre>
-                  </div>
-                  
-                  <div className="p-4 bg-yellow-50 rounded-lg">
-                    <h3 className="font-medium text-yellow-900 mb-2">Important Notes:</h3>
-                    <ul className="text-sm text-yellow-800 space-y-1">
-                      <li>• Each question should be on its own line</li>
-                      <li>• Options should start with a), b), c), d)</li>
-                      <li>• Correct answer should be marked with ✅ Correct Answer: [letter]</li>
-                      <li>• You can include "Part" headers to organize questions</li>
-                      <li>• Make sure each question has exactly 4 options</li>
-                    </ul>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  <div className="p-4 bg-blue-50 rounded-lg">
-                    <h3 className="font-medium text-blue-900 mb-2">JSON Format Example:</h3>
-                    <pre className="text-sm text-blue-800 whitespace-pre-wrap font-mono">
-{`{
-  "title": "Sample Quiz",
-  "description": "A sample quiz",
-  "questions": [
-    {
-      "id": "q1",
-      "question": "What is 2+2?",
-      "type": "multiple-choice",
-      "options": ["3", "4", "5", "6"],
-      "correctAnswer": "4"
-    },
-    {
-      "id": "q2",
-      "question": "Name two colors",
-      "type": "enumeration",
-      "correctAnswer": ["red", "blue"]
-    }
-  ]
-}`}
-                    </pre>
-                  </div>
-                  
-                  <div className="p-4 bg-yellow-50 rounded-lg">
-                    <h3 className="font-medium text-yellow-900 mb-2">Important Notes:</h3>
-                    <ul className="text-sm text-yellow-800 space-y-1">
-                      <li>• File must contain 10-100 questions</li>
-                      <li>• Supported types: "multiple-choice", "true-false", "enumeration"</li>
-                      <li>• For enumeration: correctAnswer should be an array</li>
-                      <li>• For others: correctAnswer should be a string</li>
-                      <li>• All fields are required for each question</li>
-                    </ul>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Generated Quiz Preview */}
-      {generatedQuiz && (
-        <div className="mt-8 card">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Generated Quiz Preview</h2>
-          
-          <div className="mb-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">{generatedQuiz.title}</h3>
-            {generatedQuiz.description && (
-              <p className="text-gray-600 mb-4">{generatedQuiz.description}</p>
-            )}
-            <div className="text-sm text-gray-500">
-              Created: {new Date(generatedQuiz.createdAt).toLocaleString()}
+              </pre>
+            </div>
+            <div className="mt-4 text-sm text-gray-600">
+              <p><strong>Important:</strong></p>
+              <ul className="list-disc list-inside space-y-1 mt-2">
+                <li>Each question should be on its own line</li>
+                <li>Options should start with a), b), c), d)</li>
+                <li>Correct answer should be marked with ✅ Correct Answer: [letter]</li>
+                <li>Make sure each question has exactly 4 options</li>
+              </ul>
             </div>
           </div>
+        </div>
+      )}
 
-          <div className="space-y-6">
-            {generatedQuiz.questions.map((question, index) => (
-              <div key={question.id} className="border rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-3">
-                  {index + 1}. {question.question}
-                </h4>
-                <div className="space-y-2">
-                  {question.type === 'enumeration' ? (
-                    <div className="p-2 rounded border bg-success-50 border-success-200 text-success-800">
-                      <div className="font-medium text-sm mb-1">Correct Answers:</div>
-                      {Array.isArray(question.correctAnswer) ? (
-                        <ul className="list-disc list-inside space-y-1">
-                          {question.correctAnswer.map((answer, idx) => (
-                            <li key={idx} className="text-sm">{answer}</li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <span className="text-sm">{question.correctAnswer}</span>
-                      )}
+      {/* Submission Details Modal */}
+      {selectedSubmission && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">{selectedSubmission.quizTitle}</h3>
+                  <p className="text-gray-600">Submitted by {selectedSubmission.userName}</p>
+                </div>
+                <button
+                  onClick={() => setSelectedSubmission(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                  <div>
+                    <div className="text-2xl font-bold text-blue-600">{selectedSubmission.score}</div>
+                    <div className="text-sm text-gray-600">Score</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-blue-600">{selectedSubmission.totalQuestions}</div>
+                    <div className="text-sm text-gray-600">Total</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-blue-600">{selectedSubmission.percentage}%</div>
+                    <div className="text-sm text-gray-600">Percentage</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {selectedSubmission.isApproved ? 'Approved' : 'Pending'}
                     </div>
-                  ) : (
-                    <>
-                      {question.options?.map((option, optionIndex) => (
-                        <div
-                          key={optionIndex}
-                          className={`p-2 rounded border ${
-                            option === question.correctAnswer
-                              ? 'bg-success-50 border-success-200 text-success-800'
-                              : 'bg-gray-50 border-gray-200 text-gray-700'
-                          }`}
-                        >
-                          <span className="text-sm">
-                            {String.fromCharCode(97 + optionIndex)}) {option}
-                            {option === question.correctAnswer && (
-                              <span className="ml-2 font-medium">✓ Correct</span>
-                            )}
-                          </span>
-                        </div>
-                      ))}
-                    </>
-                  )}
+                    <div className="text-sm text-gray-600">Status</div>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">
-                Total Questions: {generatedQuiz.questions.length}
+              
+              <div className="space-y-4">
+                {selectedSubmission.detailedAnswers.map((detail, index) => (
+                  <div key={index} className="border rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      {detail.isCorrect ? (
+                        <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                      ) : (
+                        <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                      )}
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900 mb-2">
+                          {index + 1}. {detail.question}
+                        </h4>
+                        <div className="space-y-2">
+                          <div className={`p-2 rounded ${detail.isCorrect ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+                            <span className="font-medium">User Answer: </span>{detail.userAnswer}
+                          </div>
+                          {!detail.isCorrect && (
+                            <div className="p-2 rounded bg-green-50 text-green-800">
+                              <span className="font-medium">Correct Answer: </span>{detail.correctAnswer}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <a
-                href="/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-primary inline-flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-                Go to Quiz
-              </a>
+              
+              <div className="mt-6 flex justify-end gap-4">
+                {!selectedSubmission.isApproved && (
+                  <button
+                    onClick={() => handleApproveSubmission(selectedSubmission.id)}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
+                  >
+                    Approve Submission
+                  </button>
+                )}
+                <button
+                  onClick={() => setSelectedSubmission(null)}
+                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
