@@ -2,8 +2,8 @@ export interface Question {
   id: string
   question: string
   options: string[]
-  correctAnswer: string
-  type: 'multiple-choice' | 'true-false'
+  correctAnswer: string | string[] // For enumeration, can be multiple correct answers
+  type: 'multiple-choice' | 'true-false' | 'enumeration'
 }
 
 export interface Quiz {
@@ -35,7 +35,24 @@ export interface QuizSubmission {
 export interface GenerateQuizRequest {
   prompt: string
   questionCount?: number
-  questionType?: 'multiple-choice' | 'true-false' | 'mixed'
+  questionType?: 'multiple-choice' | 'true-false' | 'enumeration' | 'mixed'
+}
+
+export interface UploadQuizRequest {
+  file: File
+  title?: string
+  description?: string
+}
+
+export interface QuizFileData {
+  title?: string
+  description?: string
+  questions: {
+    question: string
+    options?: string[]
+    correctAnswer: string | string[]
+    type: 'multiple-choice' | 'true-false' | 'enumeration'
+  }[]
 }
 
 export interface GenerateQuizResponse {
