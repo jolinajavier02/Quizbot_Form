@@ -21,16 +21,20 @@ export default function AdminPage() {
   const [quizTitle, setQuizTitle] = useState('')
   const [quizDescription, setQuizDescription] = useState('')
 
-  const loadSubmissions = async () => {
+  const loadSubmissions = () => {
     try {
       setSubmissionsLoading(true)
-      const response = await fetch('/api/quiz/submissions')
-      if (response.ok) {
-        const data = await response.json()
-        setSubmissions(data.submissions || [])
+      // Load submissions from localStorage
+      const storedResults = localStorage.getItem('quizResults')
+      if (storedResults) {
+        const results = JSON.parse(storedResults)
+        setSubmissions(Array.isArray(results) ? results : [])
+      } else {
+        setSubmissions([])
       }
     } catch (error) {
       console.error('Error loading submissions:', error)
+      setSubmissions([])
     } finally {
       setSubmissionsLoading(false)
     }
@@ -102,7 +106,7 @@ export default function AdminPage() {
     return questions
   }
 
-  const handleCreateQuiz = async () => {
+  const handleCreateQuiz = () => {
     if (!pastedText.trim()) {
       setError('Please paste your quiz content.')
       return
@@ -135,25 +139,17 @@ export default function AdminPage() {
         createdBy: 'admin'
       }
 
-      const response = await fetch('/api/quiz/upload', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(quiz)
-      })
+      // Save to localStorage
+      const existingQuizzes = localStorage.getItem('quizzes')
+      const quizzes = existingQuizzes ? JSON.parse(existingQuizzes) : []
+      quizzes.push(quiz)
+      localStorage.setItem('quizzes', JSON.stringify(quizzes))
 
-      const data = await response.json()
-
-      if (data.success) {
-         setGeneratedQuiz(quiz)
-         setSuccess(`Quiz "${quiz.title}" created successfully with ${quiz.questions.length} questions!`)
-         setPastedText('')
-         setQuizTitle('')
-         setQuizDescription('')
-      } else {
-        setError(data.error || 'Failed to create quiz. Please try again.')
-      }
+      setGeneratedQuiz(quiz)
+      setSuccess(`Quiz "${quiz.title}" created successfully with ${quiz.questions.length} questions!`)
+      setPastedText('')
+      setQuizTitle('')
+      setQuizDescription('')
     } catch (error) {
       console.error('Error creating quiz:', error)
       setError('An error occurred while creating the quiz. Please try again.')
@@ -173,33 +169,60 @@ export default function AdminPage() {
       setError('')
       setSuccess('')
       
-      const formData = new FormData()
-      formData.append('file', uploadFile)
-      if (uploadTitle.trim()) formData.append('title', uploadTitle.trim())
-      if (uploadDescription.trim()) formData.append('description', uploadDescription.trim())
-
-      const response = await fetch('/api/quiz/upload', {
-        method: 'POST',
-        body: formData
-      })
-
-      const data = await response.json()
-
-      if (data.success && data.quiz) {
-        setGeneratedQuiz(data.quiz)
-        setSuccess(data.message || `Quiz "${data.quiz.title}" uploaded successfully!`)
-        setUploadFile(null)
-        setUploadTitle('')
-        setUploadDescription('')
-        // Reset file input
-        const fileInput = document.getElementById('file-upload') as HTMLInputElement
-        if (fileInput) fileInput.value = ''
-      } else {
-        setError(data.error || 'Failed to upload quiz. Please try again.')
+      // Read file content
+      const fileContent = await uploadFile.text()
+      const jsonData = JSON.parse(fileContent)
+      
+      // Validate JSON structure
+      if (!jsonData.questions || !Array.isArray(jsonData.questions)) {
+        setError('Invalid JSON format. Missing questions array.')
+        setUploadLoading(false)
+        return
       }
+      
+      if (jsonData.questions.length < 10 || jsonData.questions.length > 100) {
+        setError('Quiz must contain between 10 and 100 questions.')
+        setUploadLoading(false)
+        return
+      }
+      
+      // Create quiz object
+      const quiz: Quiz = {
+        id: `quiz_${Date.now()}`,
+        title: uploadTitle.trim() || jsonData.title || 'Uploaded Quiz',
+        description: uploadDescription.trim() || jsonData.description || 'Quiz uploaded from JSON file',
+        questions: jsonData.questions.map((q: any, index: number) => ({
+          id: q.id || `q${index + 1}`,
+          question: q.question,
+          options: q.options || [],
+          correctAnswer: q.correctAnswer,
+          type: q.type || 'multiple-choice'
+        })),
+        createdAt: new Date().toISOString(),
+        createdBy: 'admin'
+      }
+      
+      // Save to localStorage
+      const existingQuizzes = localStorage.getItem('quizzes')
+      const quizzes = existingQuizzes ? JSON.parse(existingQuizzes) : []
+      quizzes.push(quiz)
+      localStorage.setItem('quizzes', JSON.stringify(quizzes))
+      
+      setGeneratedQuiz(quiz)
+      setSuccess(`Quiz "${quiz.title}" uploaded successfully with ${quiz.questions.length} questions!`)
+      setUploadFile(null)
+      setUploadTitle('')
+      setUploadDescription('')
+      // Reset file input
+      const fileInput = document.getElementById('file-upload') as HTMLInputElement
+      if (fileInput) fileInput.value = ''
     } catch (error) {
       console.error('Error uploading quiz:', error)
-      setError('An error occurred while uploading the quiz. Please try again.')
+      if (error instanceof SyntaxError) {
+        setError('Invalid JSON file format. Please check your file.')
+      } else {
+        setError('An error occurred while uploading the quiz. Please try again.')
+      }
     } finally {
       setUploadLoading(false)
     }
