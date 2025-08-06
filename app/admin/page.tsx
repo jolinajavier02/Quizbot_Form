@@ -556,6 +556,36 @@ export default function AdminPage() {
                     </div>
                   </div>
                   
+                  {/* Approval Status */}
+                  <div className="border border-gray-200 rounded-lg p-4 mb-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900">Approval Status:</span>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          selectedSubmission.isApproved 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {selectedSubmission.isApproved ? 'Approved' : 'Pending Review'}
+                        </span>
+                      </div>
+                      {!selectedSubmission.isApproved && (
+                        <button
+                          onClick={() => handleApproveSubmission(selectedSubmission.id)}
+                          className="btn-primary text-sm px-4 py-2"
+                        >
+                          Approve Results
+                        </button>
+                      )}
+                    </div>
+                    {selectedSubmission.isApproved && selectedSubmission.approvedAt && (
+                      <div className="mt-2 text-sm text-gray-600">
+                        Approved on {new Date(selectedSubmission.approvedAt).toLocaleString()}
+                        {selectedSubmission.approvedBy && ` by ${selectedSubmission.approvedBy}`}
+                      </div>
+                    )}
+                  </div>
+
                   <div className="space-y-4">
                     <h4 className="font-medium text-gray-900">Question Details:</h4>
                     {selectedSubmission.detailedAnswers?.map((answer, index) => (
