@@ -14,7 +14,8 @@ export default function TakeQuizPage() {
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [result, setResult] = useState<QuizResult | null>(null)
   const [loading, setLoading] = useState(false)
-  const [userName, setUserName] = useState('Anonymous User')
+  const [userName, setUserName] = useState('')
+  const [showNameInput, setShowNameInput] = useState(false)
   const [quizTitle, setQuizTitle] = useState('')
   const [quizDescription, setQuizDescription] = useState('')
   const [currentView, setCurrentView] = useState<'quizList' | 'quiz' | 'result'>('quizList')
@@ -63,7 +64,7 @@ export default function TakeQuizPage() {
     setQuestions(quiz.questions)
     setQuizTitle(quiz.title)
     setQuizDescription(quiz.description)
-    setCurrentView('quiz')
+    setShowNameInput(true)
     setCurrentQuestionIndex(0)
     setAnswers({})
     setResult(null)
@@ -104,7 +105,8 @@ export default function TakeQuizPage() {
     setAnswers({})
     setIsSubmitted(false)
     setResult(null)
-    setUserName('Anonymous User')
+    setShowNameInput(false)
+    setUserName('')
   }
 
   const handleAnswerSelect = (answer: string) => {
@@ -401,6 +403,105 @@ export default function TakeQuizPage() {
             })}
           </div>
         )}
+      </div>
+    )
+  }
+
+  // Name Input View
+  if (showNameInput) {
+    return (
+      <div className="max-w-md mx-auto">
+        <div className="bg-white rounded-lg p-6 shadow-sm border">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                {quizTitle || 'Welcome to QuizBot Form'}
+              </h2>
+              {quizDescription && (
+                <p className="text-gray-600 text-sm">{quizDescription}</p>
+              )}
+            </div>
+            <button
+              onClick={backToQuizList}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="userName" className="block text-sm font-medium text-gray-700 mb-2">
+                Enter your name to start the quiz:
+              </label>
+              <input
+                type="text"
+                id="userName"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Your name"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && userName.trim()) {
+                    // Check for existing submission
+                    const existingResults = JSON.parse(localStorage.getItem('quizResults') || '[]') as QuizResult[]
+                    const existingSubmission = existingResults.find(
+                      result => result.quizId === selectedQuiz?.id && result.userName.toLowerCase() === userName.trim().toLowerCase()
+                    )
+                    
+                    if (existingSubmission) {
+                      if (existingSubmission.isApproved) {
+                        // Show approved results
+                        setResult(existingSubmission)
+                        setIsSubmitted(true)
+                        setCurrentView('result')
+                      } else {
+                        // Show pending message
+                        alert('Your quiz submission is pending admin approval. Please wait for the results to be reviewed.')
+                        backToQuizList()
+                        return
+                      }
+                    } else {
+                      setShowNameInput(false)
+                      setCurrentView('quiz')
+                    }
+                  }
+                }}
+              />
+            </div>
+            <button
+              onClick={() => {
+                if (userName.trim()) {
+                  // Check for existing submission
+                  const existingResults = JSON.parse(localStorage.getItem('quizResults') || '[]') as QuizResult[]
+                  const existingSubmission = existingResults.find(
+                    result => result.quizId === selectedQuiz?.id && result.userName.toLowerCase() === userName.trim().toLowerCase()
+                  )
+                  
+                  if (existingSubmission) {
+                    if (existingSubmission.isApproved) {
+                      // Show approved results
+                      setResult(existingSubmission)
+                      setIsSubmitted(true)
+                      setCurrentView('result')
+                    } else {
+                      // Show pending message
+                      alert('Your quiz submission is pending admin approval. Please wait for the results to be reviewed.')
+                      backToQuizList()
+                      return
+                    }
+                  } else {
+                    setShowNameInput(false)
+                    setCurrentView('quiz')
+                  }
+                }
+              }}
+              disabled={!userName.trim()}
+              className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Start Quiz ({questions.length} questions)
+            </button>
+          </div>
+        </div>
       </div>
     )
   }

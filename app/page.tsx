@@ -13,7 +13,7 @@ export default function LandingPage() {
             Welcome to <span className="text-blue-600">QuizBot</span>
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Ready to test your knowledge? Challenge yourself with our comprehensive quiz platform and discover what you know!
+            An intelligent quiz platform designed to enhance learning through interactive assessments and comprehensive feedback.
           </p>
           <Link 
             href="/take-quiz"
@@ -72,21 +72,47 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Call to Action */}
-        <div className="bg-white rounded-2xl p-12 shadow-xl text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Ready to Test Your Knowledge?
-          </h2>
-          <p className="text-lg text-gray-600 mb-8">
-            Join thousands of learners who have already started their quiz journey with us.
-          </p>
-          <Link 
-            href="/take-quiz"
-            className="inline-flex items-center gap-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
-          >
-            <Play className="w-5 h-5" />
-            Start Your First Quiz
-          </Link>
+        {/* Platform Features */}
+        <div className="bg-white rounded-2xl p-12 shadow-xl">
+          <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Why Choose QuizBot?</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <BookOpen className="w-8 h-8 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Comprehensive Learning</h3>
+              <p className="text-gray-600">
+                Access a wide variety of quizzes covering multiple topics and difficulty levels to enhance your knowledge.
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trophy className="w-8 h-8 text-green-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Instant Results</h3>
+              <p className="text-gray-600">
+                Get immediate feedback on your performance with detailed explanations and scoring analytics.
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="w-8 h-8 text-purple-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Admin Management</h3>
+              <p className="text-gray-600">
+                Powerful admin dashboard for creating, managing, and reviewing quiz submissions with approval workflows.
+              </p>
+            </div>
+          </div>
+          <div className="text-center mt-8">
+            <Link 
+              href="/take-quiz"
+              className="inline-flex items-center gap-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+            >
+              <Play className="w-5 h-5" />
+              Explore Available Quizzes
+            </Link>
+          </div>
         </div>
       </div>
     </div>
