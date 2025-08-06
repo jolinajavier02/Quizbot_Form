@@ -1,26 +1,91 @@
 'use client'
 
 import { useState } from 'react'
-import { Send, Loader2, CheckCircle, AlertCircle, Upload, FileText } from 'lucide-react'
-import { GenerateQuizRequest, Quiz } from '../types'
+import { Send, Loader2, CheckCircle, AlertCircle, Upload, FileText, Clipboard } from 'lucide-react'
+import { Quiz } from '../types'
 
 export default function AdminPage() {
-  const [prompt, setPrompt] = useState('')
-  const [questionCount, setQuestionCount] = useState(10)
-  const [questionType, setQuestionType] = useState<'multiple-choice' | 'true-false' | 'enumeration' | 'mixed'>('multiple-choice')
+  const [pastedText, setPastedText] = useState('')
   const [loading, setLoading] = useState(false)
   const [generatedQuiz, setGeneratedQuiz] = useState<Quiz | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const [activeTab, setActiveTab] = useState<'generate' | 'upload'>('generate')
+  const [activeTab, setActiveTab] = useState<'paste' | 'upload'>('paste')
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [uploadTitle, setUploadTitle] = useState('')
   const [uploadDescription, setUploadDescription] = useState('')
   const [uploadLoading, setUploadLoading] = useState(false)
+  const [quizTitle, setQuizTitle] = useState('')
+  const [quizDescription, setQuizDescription] = useState('')
 
-  const handleGenerateQuiz = async () => {
-    if (!prompt.trim()) {
-      setError('Please enter a prompt for quiz generation.')
+  const parseQuizFromText = (text: string) => {
+    const lines = text.split('\n').filter(line => line.trim())
+    const questions = []
+    let currentQuestion = null
+    let currentOptions = []
+    let correctAnswer = ''
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim()
+      
+      // Skip part headers and empty lines
+      if (line.startsWith('Part ') || line === '') continue
+      
+      // Check if it's a question (doesn't start with a), b), c), d) or ✅)
+      if (!line.match(/^[a-d]\)/) && !line.startsWith('✅')) {
+        // Save previous question if exists
+        if (currentQuestion && currentOptions.length > 0 && correctAnswer) {
+          questions.push({
+            id: `q${questions.length + 1}`,
+            question: currentQuestion,
+            options: currentOptions,
+            correctAnswer: correctAnswer,
+            type: 'multiple-choice'
+          })
+        }
+        
+        // Start new question
+        currentQuestion = line
+        currentOptions = []
+        correctAnswer = ''
+      }
+      // Check if it's an option
+      else if (line.match(/^[a-d]\)/)) {
+        const option = line.substring(3).trim()
+        currentOptions.push(option)
+      }
+      // Check if it's the correct answer
+      else if (line.startsWith('✅ Correct Answer:')) {
+        const answerLetter = line.split(':')[1].trim()
+        const answerIndex = answerLetter.charCodeAt(0) - 97 // Convert a,b,c,d to 0,1,2,3
+        if (answerIndex >= 0 && answerIndex < currentOptions.length) {
+          correctAnswer = currentOptions[answerIndex]
+        }
+      }
+    }
+    
+    // Add the last question
+    if (currentQuestion && currentOptions.length > 0 && correctAnswer) {
+      questions.push({
+        id: `q${questions.length + 1}`,
+        question: currentQuestion,
+        options: currentOptions,
+        correctAnswer: correctAnswer,
+        type: 'multiple-choice'
+      })
+    }
+    
+    return questions
+  }
+
+  const handleCreateQuiz = async () => {
+    if (!pastedText.trim()) {
+      setError('Please paste your quiz content.')
+      return
+    }
+
+    if (!quizTitle.trim()) {
+      setError('Please enter a quiz title.')
       return
     }
 
@@ -29,26 +94,39 @@ export default function AdminPage() {
       setError('')
       setSuccess('')
       
-      const request: GenerateQuizRequest = {
-        prompt: prompt.trim(),
-        questionCount,
-        questionType
+      const questions = parseQuizFromText(pastedText)
+      
+      if (questions.length === 0) {
+        setError('No valid questions found in the pasted text. Please check the format.')
+        setLoading(false)
+        return
+      }
+      
+      const quiz: Quiz = {
+        id: `quiz_${Date.now()}`,
+        title: quizTitle.trim(),
+        description: quizDescription.trim() || 'Quiz created from pasted content',
+        questions: questions,
+        createdAt: new Date().toISOString(),
+        createdBy: 'admin'
       }
 
-      const response = await fetch('/api/quiz/generate', {
+      const response = await fetch('/api/quiz/upload', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(request)
+        body: JSON.stringify(quiz)
       })
 
       const data = await response.json()
 
-      if (data.success && data.quiz) {
-        setGeneratedQuiz(data.quiz)
-        setSuccess(`Quiz "${data.quiz.title}" generated successfully with ${data.quiz.questions.length} questions!`)
-        setPrompt('')
+      if (data.success) {
+         setGeneratedQuiz(quiz)
+         setSuccess(`Quiz "${quiz.title}" created successfully with ${quiz.questions.length} questions!`)
+         setPastedText('')
+         setQuizTitle('')
+         setQuizDescription('')
       } else {
         setError(data.error || 'Failed to generate quiz. Please try again.')
       }
