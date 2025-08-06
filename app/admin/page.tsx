@@ -253,9 +253,115 @@ export default function AdminPage() {
               </div>
             )}
           </div>
+            </>
+          ) : (
+            <>
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Upload Quiz from JSON</h2>
+              
+              <div className="space-y-6">
+                <div>
+                  <label htmlFor="file-upload" className="block text-sm font-medium text-gray-700 mb-2">
+                    JSON File *
+                  </label>
+                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-gray-400 transition-colors">
+                    <div className="space-y-1 text-center">
+                      <FileText className="mx-auto h-12 w-12 text-gray-400" />
+                      <div className="flex text-sm text-gray-600">
+                        <label
+                          htmlFor="file-upload"
+                          className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
+                        >
+                          <span>Upload a file</span>
+                          <input
+                            id="file-upload"
+                            name="file-upload"
+                            type="file"
+                            accept=".json"
+                            className="sr-only"
+                            onChange={handleFileChange}
+                            disabled={uploadLoading}
+                          />
+                        </label>
+                        <p className="pl-1">or drag and drop</p>
+                      </div>
+                      <p className="text-xs text-gray-500">JSON files only, 10-100 questions</p>
+                      {uploadFile && (
+                        <p className="text-sm text-green-600 font-medium">
+                          Selected: {uploadFile.name}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label htmlFor="upload-title" className="block text-sm font-medium text-gray-700 mb-2">
+                      Quiz Title (Optional)
+                    </label>
+                    <input
+                      id="upload-title"
+                      type="text"
+                      value={uploadTitle}
+                      onChange={(e) => setUploadTitle(e.target.value)}
+                      className="input-field"
+                      placeholder="Override title from JSON file"
+                      disabled={uploadLoading}
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="upload-description" className="block text-sm font-medium text-gray-700 mb-2">
+                      Quiz Description (Optional)
+                    </label>
+                    <textarea
+                      id="upload-description"
+                      value={uploadDescription}
+                      onChange={(e) => setUploadDescription(e.target.value)}
+                      className="input-field h-24 resize-none"
+                      placeholder="Override description from JSON file"
+                      disabled={uploadLoading}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleFileUpload}
+                  disabled={uploadLoading || !uploadFile}
+                  className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+                >
+                  {uploadLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Uploading Quiz...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      Upload Quiz
+                    </>
+                  )}
+                </button>
+
+                {error && (
+                  <div className="flex items-center gap-2 p-3 bg-error-50 border border-error-200 rounded-lg text-error-700">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-sm">{error}</span>
+                  </div>
+                )}
+
+                {success && (
+                  <div className="flex items-center gap-2 p-3 bg-success-50 border border-success-200 rounded-lg text-success-700">
+                    <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-sm">{success}</span>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Example Prompts */}
+        {/* Example Prompts / JSON Format Guide */}
         <div className="card">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Example Prompts</h2>
           <div className="space-y-3">
