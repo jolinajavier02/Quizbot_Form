@@ -387,9 +387,7 @@ d) Saturn
                 Sign in as Admin
               </button>
             </div>
-            <div className="text-xs text-gray-500 text-center">
-              Demo password: admin123
-            </div>
+
           </div>
         </div>
       </div>
