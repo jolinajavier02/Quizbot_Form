@@ -18,10 +18,21 @@ export interface Quiz {
 export interface QuizResult {
   id: string
   quizId: string
+  quizTitle: string
+  quizDescription: string
   userName: string
   answers: { [questionIndex: number]: string }
+  detailedAnswers: {
+    questionId: string
+    question: string
+    userAnswer: string
+    correctAnswer: string | string[]
+    isCorrect: boolean
+    options: string[]
+  }[]
   score: number
   totalQuestions: number
+  percentage: number
   submittedAt: string
   timeTaken?: number
 }

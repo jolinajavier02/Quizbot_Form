@@ -96,7 +96,8 @@ export default function QuizPage() {
         body: JSON.stringify({
           userName,
           answers,
-          questions
+          questions,
+          quiz: selectedQuiz
         })
       })
 

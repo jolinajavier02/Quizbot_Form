@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
-import { QuizResult, QuizSubmission } from '../../../types'
+import { QuizResult, QuizSubmission, Quiz } from '../../../types'
 import { saveQuizResultToStorage } from '../../../utils/storage'
 
 export async function POST(request: NextRequest) {
   try {
-    const body: QuizSubmission = await request.json()
-    const { userName, answers, questions } = body
+    const body: QuizSubmission & { quiz?: Quiz } = await request.json()
+    const { userName, answers, questions, quiz } = body
 
     if (!userName || !userName.trim()) {
       return NextResponse.json(
@@ -22,27 +22,52 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Calculate score
+    // Calculate score and create detailed answers
     let score = 0
     const totalQuestions = questions.length
+    const detailedAnswers = []
 
     for (let i = 0; i < totalQuestions; i++) {
-      const userAnswer = answers[i]
-      const correctAnswer = questions[i]?.correctAnswer
+      const question = questions[i]
+      const userAnswer = answers[i] || ''
+      const correctAnswer = question?.correctAnswer
       
-      if (userAnswer && userAnswer === correctAnswer) {
+      let isCorrect = false
+      if (Array.isArray(correctAnswer)) {
+        // For enumeration questions with multiple correct answers
+        isCorrect = correctAnswer.includes(userAnswer)
+      } else {
+        isCorrect = userAnswer === correctAnswer
+      }
+      
+      if (isCorrect) {
         score++
       }
+
+      detailedAnswers.push({
+        questionId: question.id,
+        question: question.question,
+        userAnswer,
+        correctAnswer,
+        isCorrect,
+        options: question.options
+      })
     }
+
+    const percentage = Math.round((score / totalQuestions) * 100)
 
     // Create quiz result
     const result: QuizResult = {
       id: uuidv4(),
-      quizId: 'latest', // For now, we'll use 'latest' as the quiz ID
+      quizId: quiz?.id || 'unknown',
+      quizTitle: quiz?.title || 'Unknown Quiz',
+      quizDescription: quiz?.description || '',
       userName: userName.trim(),
       answers,
+      detailedAnswers,
       score,
       totalQuestions,
+      percentage,
       submittedAt: new Date().toISOString()
     }
 
