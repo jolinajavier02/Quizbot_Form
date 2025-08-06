@@ -353,7 +353,7 @@ export default function AdminPage() {
             )}
           </div>
             </>
-          ) : (
+          ) : activeTab === 'upload' ? (
             <>
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Upload Quiz from JSON</h2>
               
@@ -457,12 +457,7 @@ export default function AdminPage() {
                 )}
               </div>
             </>
-          )}
-        </div>
-
-        {/* Right Panel */}
-        <div className="card">
-          {activeTab === 'submissions' ? (
+          ) : (
             <>
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Quiz Submissions</h2>
               
@@ -507,7 +502,12 @@ export default function AdminPage() {
                 </div>
               )}
             </>
-          ) : (
+          )}
+        </div>
+
+        {/* Right Panel */}
+        <div className="card">
+          {activeTab === 'submissions' ? (
             <>
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Submission Details</h2>
               
@@ -525,51 +525,44 @@ export default function AdminPage() {
                     <div className="mt-2 flex items-center gap-4">
                       <div className="flex items-center gap-2">
                         <Trophy className="w-5 h-5 text-yellow-500" />
-                        <span className="font-medium text-lg">{selectedSubmission.percentage}%</span>
+                        <span className="text-lg font-semibold text-gray-900">
+                          {selectedSubmission.score}/{selectedSubmission.totalQuestions}
+                        </span>
+                        <span className="text-sm text-gray-600">({selectedSubmission.percentage}%)</span>
                       </div>
-                      <span className="text-gray-600">({selectedSubmission.score}/{selectedSubmission.totalQuestions} correct)</span>
                     </div>
                   </div>
                   
                   <div className="space-y-4">
-                    <h4 className="font-medium text-gray-900">Detailed Answers:</h4>
+                    <h4 className="font-medium text-gray-900">Question Details:</h4>
                     {selectedSubmission.detailedAnswers?.map((answer, index) => (
-                      <div key={answer.questionId || index} className="border rounded-lg p-4">
-                        <h5 className="font-medium text-gray-900 mb-3">
-                          {index + 1}. {answer.question}
-                        </h5>
-                        
-                        {answer.options && answer.options.length > 0 && (
-                          <div className="space-y-2 mb-3">
-                            {answer.options.map((option, optionIndex) => (
-                              <div
-                                key={optionIndex}
-                                className={`p-2 rounded border text-sm ${
-                                  option === answer.correctAnswer
-                                    ? 'bg-green-50 border-green-200 text-green-800'
-                                    : option === answer.userAnswer
-                                    ? 'bg-red-50 border-red-200 text-red-800'
-                                    : 'bg-gray-50 border-gray-200'
-                                }`}
-                              >
-                                {option}
-                                {option === answer.correctAnswer && (
-                                  <span className="ml-2 font-medium">(Correct)</span>
-                                )}
-                                {option === answer.userAnswer && option !== answer.correctAnswer && (
-                                  <span className="ml-2 font-medium">(Your Answer)</span>
-                                )}
+                      <div key={index} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-start gap-3 mb-3">
+                          {answer.isCorrect ? (
+                            <CheckCircle className="w-5 h-5 text-success-500 mt-0.5 flex-shrink-0" />
+                          ) : (
+                            <AlertCircle className="w-5 h-5 text-error-500 mt-0.5 flex-shrink-0" />
+                          )}
+                          <div className="flex-1">
+                            <h5 className="font-medium text-gray-900 mb-2">
+                              {index + 1}. {answer.question}
+                            </h5>
+                            <div className="space-y-1 text-sm">
+                              <div className="text-gray-600">
+                                <span className="font-medium">User Answer: </span>
+                                <span className={answer.isCorrect ? 'text-success-700' : 'text-error-700'}>
+                                  {Array.isArray(answer.userAnswer) ? answer.userAnswer.join(', ') : answer.userAnswer}
+                                </span>
                               </div>
-                            ))}
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center justify-between text-sm">
-                          <div>
-                            <span className="text-gray-600">Your answer: </span>
-                            <span className={answer.isCorrect ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
-                              {Array.isArray(answer.userAnswer) ? answer.userAnswer.join(', ') : answer.userAnswer}
-                            </span>
+                              {!answer.isCorrect && (
+                                <div className="text-gray-600">
+                                  <span className="font-medium">Correct Answer: </span>
+                                  <span className="text-success-700">
+                                    {Array.isArray(answer.correctAnswer) ? answer.correctAnswer.join(', ') : answer.correctAnswer}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                           <div className={`px-2 py-1 rounded text-xs font-medium ${
                             answer.isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
@@ -587,67 +580,96 @@ export default function AdminPage() {
                     onClick={() => setSelectedSubmission(null)}
                     className="btn-secondary w-full"
                   >
-                    Back to Submissions List
+                    Back to Submissions
                   </button>
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   <Eye className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p>Select a submission to view details</p>
+                  <p>Select a submission to view details.</p>
                 </div>
               )}
             </>
           ) : (
             <>
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">JSON Format Guide</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Example Prompts / JSON Format Guide</h2>
               
-              <div className="space-y-4">
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <h3 className="font-medium text-gray-900 mb-2">Required JSON Structure:</h3>
-                  <pre className="text-xs text-gray-700 overflow-x-auto">
+              {activeTab === 'paste' ? (
+                <div className="space-y-6">
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <h3 className="font-medium text-blue-900 mb-2">Example Quiz Format:</h3>
+                    <pre className="text-sm text-blue-800 whitespace-pre-wrap font-mono">
+{`Part 1
+
+What is the capital of France?
+a) London
+b) Berlin
+c) Paris
+d) Madrid
+✅ Correct Answer: c
+
+Which planet is known as the Red Planet?
+a) Venus
+b) Mars
+c) Jupiter
+d) Saturn
+✅ Correct Answer: b`}
+                    </pre>
+                  </div>
+                  
+                  <div className="p-4 bg-yellow-50 rounded-lg">
+                    <h3 className="font-medium text-yellow-900 mb-2">Important Notes:</h3>
+                    <ul className="text-sm text-yellow-800 space-y-1">
+                      <li>• Each question should be on its own line</li>
+                      <li>• Options should start with a), b), c), d)</li>
+                      <li>• Correct answer should be marked with ✅ Correct Answer: [letter]</li>
+                      <li>• You can include "Part" headers to organize questions</li>
+                      <li>• Make sure each question has exactly 4 options</li>
+                    </ul>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <h3 className="font-medium text-blue-900 mb-2">JSON Format Example:</h3>
+                    <pre className="text-sm text-blue-800 whitespace-pre-wrap font-mono">
 {`{
-  "title": "Quiz Title",
-  "description": "Quiz Description",
+  "title": "Sample Quiz",
+  "description": "A sample quiz",
   "questions": [
     {
-      "question": "Question text?",
+      "id": "q1",
+      "question": "What is 2+2?",
       "type": "multiple-choice",
-      "options": ["A", "B", "C", "D"],
-      "correctAnswer": "A"
+      "options": ["3", "4", "5", "6"],
+      "correctAnswer": "4"
     },
     {
-      "question": "True/False question?",
-      "type": "true-false",
-      "options": ["True", "False"],
-      "correctAnswer": "True"
-    },
-    {
-      "question": "List three items:",
+      "id": "q2",
+      "question": "Name two colors",
       "type": "enumeration",
-      "options": [],
-      "correctAnswer": ["Item 1", "Item 2", "Item 3"]
+      "correctAnswer": ["red", "blue"]
     }
   ]
 }`}
-                  </pre>
+                    </pre>
+                  </div>
+                  
+                  <div className="p-4 bg-yellow-50 rounded-lg">
+                    <h3 className="font-medium text-yellow-900 mb-2">Important Notes:</h3>
+                    <ul className="text-sm text-yellow-800 space-y-1">
+                      <li>• File must contain 10-100 questions</li>
+                      <li>• Supported types: "multiple-choice", "true-false", "enumeration"</li>
+                      <li>• For enumeration: correctAnswer should be an array</li>
+                      <li>• For others: correctAnswer should be a string</li>
+                      <li>• All fields are required for each question</li>
+                    </ul>
+                  </div>
                 </div>
-                
-                <div className="p-4 bg-yellow-50 rounded-lg">
-                  <h3 className="font-medium text-yellow-900 mb-2">Important Notes:</h3>
-                  <ul className="text-sm text-yellow-800 space-y-1">
-                    <li>• File must contain 10-100 questions</li>
-                    <li>• Supported types: "multiple-choice", "true-false", "enumeration"</li>
-                    <li>• For enumeration: correctAnswer should be an array</li>
-                    <li>• For others: correctAnswer should be a string</li>
-                    <li>• All fields are required for each question</li>
-                  </ul>
-                </div>
-               </div>
-             </>
+              )}
+            </>
           )}
-         </div>
-
-        {/* Example Prompts / JSON Format Guide */}
+        </div>
       </div>
 
       {/* Generated Quiz Preview */}
@@ -686,37 +708,41 @@ export default function AdminPage() {
                       )}
                     </div>
                   ) : (
-                    question.options.map((option, optionIndex) => (
-                      <div
-                        key={optionIndex}
-                        className={`p-2 rounded border ${
-                          option === question.correctAnswer
-                            ? 'bg-success-50 border-success-200 text-success-800'
-                            : 'bg-gray-50 border-gray-200'
-                        }`}
-                      >
-                        {option}
-                        {option === question.correctAnswer && (
-                          <span className="ml-2 text-xs font-medium">(Correct Answer)</span>
-                        )}
-                      </div>
-                    ))
+                    <>
+                      {question.options?.map((option, optionIndex) => (
+                        <div
+                          key={optionIndex}
+                          className={`p-2 rounded border ${
+                            option === question.correctAnswer
+                              ? 'bg-success-50 border-success-200 text-success-800'
+                              : 'bg-gray-50 border-gray-200 text-gray-700'
+                          }`}
+                        >
+                          <span className="text-sm">
+                            {String.fromCharCode(97 + optionIndex)}) {option}
+                            {option === question.correctAnswer && (
+                              <span className="ml-2 font-medium">✓ Correct</span>
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </>
                   )}
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="mt-6 p-4 bg-green-50 rounded-lg">
+          <div className="mt-6 pt-6 border-t border-gray-200">
             <div className="flex items-center justify-between">
-              <p className="text-green-800 text-sm">
-                ✅ Quiz has been saved and is now available for users to take!
-              </p>
+              <div className="text-sm text-gray-600">
+                Total Questions: {generatedQuiz.questions.length}
+              </div>
               <a
                 href="/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-primary text-sm inline-flex items-center gap-2"
+                className="btn-primary inline-flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
