@@ -460,7 +460,12 @@ export default function AdminPage() {
                 )}
               </div>
             </>
-          ) : (
+          )}
+        </div>
+
+        {/* Right Panel */}
+        <div className="card">
+          {activeTab === 'submissions' ? (
             <>
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Quiz Submissions</h2>
               
@@ -640,10 +645,10 @@ export default function AdminPage() {
                     <li>• All fields are required for each question</li>
                   </ul>
                 </div>
-              </div>
-            </>
+               </div>
+             </>
           )}
-        </div>
+         </div>
 
         {/* Example Prompts / JSON Format Guide */}
         <div className="card">
