@@ -68,7 +68,8 @@ export async function POST(request: NextRequest) {
       score,
       totalQuestions,
       percentage,
-      submittedAt: new Date().toISOString()
+      submittedAt: new Date().toISOString(),
+      isApproved: false
     }
 
     // Save the result

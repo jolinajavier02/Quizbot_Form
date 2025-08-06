@@ -189,7 +189,7 @@ async function saveQuizResultToGoogleSheets(result: QuizResult): Promise<void> {
 
   // Ensure the 'Results' sheet exists
   await ensureSheetExists(sheets, spreadsheetId, 'Results', [
-    'Result ID', 'Quiz ID', 'Quiz Title', 'Quiz Description', 'User Name', 'Score', 'Total Questions', 'Percentage', 'Submitted At', 'Answers (JSON)', 'Detailed Answers (JSON)'
+    'Result ID', 'Quiz ID', 'Quiz Title', 'Quiz Description', 'User Name', 'Score', 'Total Questions', 'Percentage', 'Submitted At', 'Answers (JSON)', 'Detailed Answers (JSON)', 'Is Approved'
   ])
 
   // Prepare the row data
@@ -204,12 +204,13 @@ async function saveQuizResultToGoogleSheets(result: QuizResult): Promise<void> {
     result.percentage,
     result.submittedAt,
     JSON.stringify(result.answers),
-    JSON.stringify(result.detailedAnswers)
+    JSON.stringify(result.detailedAnswers),
+    result.isApproved.toString()
   ]]
 
   await sheets.spreadsheets.values.append({
     spreadsheetId,
-    range: 'Results!A:K',
+    range: 'Results!A:L',
     valueInputOption: 'RAW',
     requestBody: {
       values
@@ -224,7 +225,7 @@ async function getAllQuizResultsFromGoogleSheets(): Promise<QuizResult[]> {
   try {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: 'Results!A:K'
+      range: 'Results!A:L'
     })
 
     const rows = response.data.values
@@ -247,7 +248,8 @@ async function getAllQuizResultsFromGoogleSheets(): Promise<QuizResult[]> {
           percentage: parseFloat(row[7]) || 0,
           submittedAt: row[8],
           answers: row[9] ? JSON.parse(row[9]) : {},
-          detailedAnswers: row[10] ? JSON.parse(row[10]) : []
+          detailedAnswers: row[10] ? JSON.parse(row[10]) : [],
+          isApproved: row[11] === 'true' || false
         }
         results.push(result)
       }
