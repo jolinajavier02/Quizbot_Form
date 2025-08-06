@@ -220,7 +220,74 @@ export default function TakeQuizPage() {
     }
   }
 
-
+  const handleDownloadResults = async (format: 'pdf' | 'csv') => {
+    try {
+      if (!result || !selectedQuiz) return
+      
+      let content = ''
+      let mimeType = ''
+      let fileExtension: string = format
+      
+      if (format === 'csv') {
+        // Generate CSV content
+        const headers = ['Question', 'Your Answer', 'Correct Answer', 'Result']
+        const csvRows = [headers.join(',')]
+        
+        result.detailedAnswers.forEach((answerDetail, index) => {
+          const question = selectedQuiz.questions[index]
+          if (question && answerDetail) {
+            const row = [
+              `"${question.question.replace(/"/g, '""')}",
+              `"${answerDetail.userAnswer.replace(/"/g, '""')}",
+              `"${Array.isArray(question.correctAnswer) ? question.correctAnswer.join(', ') : question.correctAnswer.toString().replace(/"/g, '""')}",
+              answerDetail.isCorrect ? 'Correct' : 'Incorrect'
+            ]
+            csvRows.push(row.join(','))
+          }
+        })
+        
+        csvRows.push('')
+        csvRows.push(`Total Score,${result.score},${result.totalQuestions},${((result.score / result.totalQuestions) * 100).toFixed(1)}%`)
+        
+        content = csvRows.join('\n')
+        mimeType = 'text/csv'
+      } else {
+        // Generate simple text content for PDF (since we can't generate actual PDF client-side easily)
+        content = `Quiz Results for ${userName}\n\n`
+        content += `Quiz: ${selectedQuiz.title || 'Unknown Quiz'}\n`
+        content += `Date: ${new Date(result.submittedAt).toLocaleDateString()}\n`
+        content += `Score: ${result.score}/${result.totalQuestions} (${((result.score / result.totalQuestions) * 100).toFixed(1)}%)\n\n`
+        content += 'Detailed Results:\n'
+        content += '='.repeat(50) + '\n\n'
+        
+        result.detailedAnswers.forEach((answerDetail, index) => {
+          const question = selectedQuiz.questions[index]
+          if (question && answerDetail) {
+            content += `Question ${index + 1}: ${question.question}\n`
+            content += `Your Answer: ${answerDetail.userAnswer}\n`
+            content += `Correct Answer: ${Array.isArray(question.correctAnswer) ? question.correctAnswer.join(', ') : question.correctAnswer}\n`
+            content += `Result: ${answerDetail.isCorrect ? 'Correct ✓' : 'Incorrect ✗'}\n\n`
+          }
+        })
+        
+        mimeType = 'text/plain'
+        fileExtension = 'txt' // Change extension since we're generating text, not PDF
+      }
+      
+      // Create and download file
+      const blob = new Blob([content], { type: mimeType })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `quiz-results-${userName}.${fileExtension}`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (error) {
+      console.error('Error downloading results:', error)
+    }
+  }
 
   // Loading state
   if (loading && currentView === 'quizList') {
