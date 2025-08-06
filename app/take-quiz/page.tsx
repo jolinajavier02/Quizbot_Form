@@ -237,9 +237,9 @@ export default function TakeQuizPage() {
           const question = selectedQuiz.questions[index]
           if (question && answerDetail) {
             const row = [
-              `"${question.question.replace(/"/g, '""')}",
-              `"${answerDetail.userAnswer.replace(/"/g, '""')}",
-              `"${Array.isArray(question.correctAnswer) ? question.correctAnswer.join(', ') : question.correctAnswer.toString().replace(/"/g, '""')}",
+              '"' + question.question.replace(/"/g, '""') + '"',
+              '"' + answerDetail.userAnswer.replace(/"/g, '""') + '"',
+              '"' + (Array.isArray(question.correctAnswer) ? question.correctAnswer.join(', ') : question.correctAnswer.toString()).replace(/"/g, '""') + '"',
               answerDetail.isCorrect ? 'Correct' : 'Incorrect'
             ]
             csvRows.push(row.join(','))
