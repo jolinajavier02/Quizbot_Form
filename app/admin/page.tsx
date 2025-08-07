@@ -207,7 +207,7 @@ export default function AdminPage() {
     return questions
   }
 
-  const handleCreateQuiz = () => {
+  const handleCreateQuiz = async () => {
     if (!quizTitle.trim()) {
       setError('Please enter a quiz title.')
       return
