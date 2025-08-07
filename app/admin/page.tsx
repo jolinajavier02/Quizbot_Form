@@ -26,6 +26,7 @@ export default function AdminPage() {
   const [showDropdown, setShowDropdown] = useState<string | null>(null)
   const [chatGptPrompt, setChatGptPrompt] = useState('')
   const [generatingWithAI, setGeneratingWithAI] = useState(false)
+  const [copiedQuizId, setCopiedQuizId] = useState<string | null>(null)
 
   // Admin password (in a real app, this would be handled securely)
   const ADMIN_PASSWORD = 'admin123'
@@ -56,6 +57,27 @@ export default function AdminPage() {
     setIsLoggedIn(false)
     localStorage.removeItem('adminLoggedIn')
     setLoginPassword('')
+  }
+
+  const handleCopyShareUrl = async (quizId: string) => {
+    try {
+      const shareUrl = generateQuizShareUrl(quizId)
+      await navigator.clipboard.writeText(shareUrl)
+      setCopiedQuizId(quizId)
+      setTimeout(() => setCopiedQuizId(null), 2000)
+    } catch (error) {
+      console.error('Failed to copy URL:', error)
+      // Fallback for browsers that don't support clipboard API
+      const shareUrl = generateQuizShareUrl(quizId)
+      const textArea = document.createElement('textarea')
+      textArea.value = shareUrl
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      setCopiedQuizId(quizId)
+      setTimeout(() => setCopiedQuizId(null), 2000)
+    }
   }
 
   const loadQuizzes = async () => {
@@ -546,15 +568,38 @@ d) Saturn
                       <span>{new Date(quiz.createdAt).toLocaleDateString()}</span>
                     </div>
                     
-                    <a
-                      href="/take-quiz"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
-                    >
-                      <Eye className="w-4 h-4" />
-                      View Quiz
-                    </a>
+                    <div className="flex items-center justify-between">
+                      <a
+                        href={generateQuizShareUrl(quiz.id)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      >
+                        <Eye className="w-4 h-4" />
+                        View Quiz
+                      </a>
+                      
+                      <button
+                        onClick={() => handleCopyShareUrl(quiz.id)}
+                        className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                          copiedQuizId === quiz.id
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {copiedQuizId === quiz.id ? (
+                          <>
+                            <CheckCircle className="w-4 h-4" />
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Share className="w-4 h-4" />
+                            Share
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
