@@ -210,7 +210,7 @@ export default function AdminPage() {
       }
       
       const quiz: Quiz = {
-        id: editingQuiz ? editingQuiz.id : `quiz_${Date.now()}`,
+        id: editingQuiz ? editingQuiz.id : generateQuizId(),
         title: quizTitle.trim(),
         description: quizDescription.trim() || 'Quiz created from pasted content',
         questions: questions,
@@ -218,21 +218,20 @@ export default function AdminPage() {
         createdBy: 'admin'
       }
 
-      const existingQuizzes = localStorage.getItem('quizzes')
-      let quizzesArray = existingQuizzes ? JSON.parse(existingQuizzes) : []
-      
       if (editingQuiz) {
         // Update existing quiz
-        quizzesArray = quizzesArray.map((q: Quiz) => q.id === editingQuiz.id ? quiz : q)
+        const existingQuizzes = await getAllQuizzesFromStorage()
+        const updatedQuizzes = existingQuizzes.map((q: Quiz) => q.id === editingQuiz.id ? quiz : q)
+        localStorage.setItem('quizzes', JSON.stringify(updatedQuizzes))
+        setQuizzes(updatedQuizzes)
         setSuccess(`Quiz "${quiz.title}" updated successfully!`)
       } else {
         // Create new quiz
-        quizzesArray.push(quiz)
+        await saveQuizToStorage(quiz)
+        const allQuizzes = await getAllQuizzesFromStorage()
+        setQuizzes(allQuizzes)
         setSuccess(`Quiz "${quiz.title}" created successfully with ${quiz.questions.length} questions!`)
       }
-      
-      localStorage.setItem('quizzes', JSON.stringify(quizzesArray))
-      setQuizzes(quizzesArray)
       
       setGeneratedQuiz(quiz)
       setPastedText('')
