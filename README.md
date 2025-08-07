@@ -92,6 +92,44 @@ An interactive quiz web application that mimics Google Forms with fast question 
 4. Submit to see your results
 5. Download results as PDF or CSV if needed
 
+## 📖 How to Use
+
+### For Quiz Takers
+
+1. **Visit a Shared Quiz**: Use the unique link provided (e.g., `/quiz/quiz_123456`)
+2. **Enter Your Name**: Simple one-field registration
+3. **Take the Quiz**: Navigate through questions with Google Forms-like interface
+4. **Submit & View Results**: Get immediate feedback and scoring
+
+**Alternative**: Browse all quizzes at `/take-quiz`
+
+### For Administrators
+
+1. **Access Admin Panel**: Go to `/admin` (password: `admin123`)
+2. **Create Quiz**: Use the "Create Quiz" tab with formatted text
+3. **Share Quiz**: Copy the unique shareable link with one click
+4. **Manage Submissions**: Review and approve quiz results
+5. **Monitor Performance**: Track quiz statistics
+
+### Quiz Sharing Feature
+
+**🔗 Unique Quiz Links**: Each quiz gets a unique URL like `/quiz/[quizId]`
+
+**📋 Easy Sharing**: 
+- Click the "Share" button on any quiz in the admin panel
+- Copy the generated link automatically
+- Share via email, social media, or any platform
+
+**🎯 Direct Access**: 
+- Recipients can access the quiz directly without browsing
+- No complex registration - just name required
+- Google Forms-like clean interface
+
+**💾 Persistent Data**: 
+- Quizzes remain accessible even after browser restart
+- Results are saved and can be reviewed anytime
+- Admin can track all submissions centrally
+
 ## 🏗️ Project Structure
 
 ```
