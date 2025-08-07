@@ -12,16 +12,16 @@ An interactive quiz web application that mimics Google Forms with fast question 
 
 ## ✨ Features
 
-- **Local Quiz Generation**: Generate quizzes instantly using built-in templates and mock data
-- **Interactive Quiz Taking**: Clean, mobile-friendly interface with enhanced validation
-- **Auto-Grading**: Immediate scoring and detailed results with completion checks
-- **Multiple Question Types**: Support for multiple choice and true/false questions
-- **Data Storage**: Store results in Google Sheets or local storage with fallback handling
-- **Export Results**: Download quiz results as PDF or CSV
-- **Admin Interface**: Easy quiz generation with customizable prompts and better UX
-- **Responsive Design**: Works seamlessly on desktop and mobile devices
-- **Type-Safe**: Full TypeScript support with comprehensive error handling
-- **Production Ready**: Optimized build process with zero compilation errors
+- **📝 Quiz Creation**: Create quizzes by pasting formatted text or uploading files
+- **🔗 Quiz Sharing**: Generate unique shareable links for each quiz (Google Forms-like)
+- **🎯 Multiple Question Types**: Support for multiple-choice, true/false, and enumeration questions
+- **👥 Simplified Registration**: Just name required for quiz taking (streamlined experience)
+- **📊 Results Tracking**: Comprehensive scoring and detailed answer analysis
+- **🔐 Admin Dashboard**: Secure admin interface for quiz and submission management
+- **💾 Persistent Storage**: Quiz data persisted across browser sessions
+- **📱 Responsive Design**: Works seamlessly on desktop and mobile devices
+- **🎨 Google Forms-Like UI**: Clean, intuitive interface for quiz taking
+- **📋 One-Click Sharing**: Copy shareable quiz links with a single click
 
 ## 🚀 Quick Start
 
