@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Send, Loader2, CheckCircle, AlertCircle, Upload, FileText, Clipboard, Users, Calendar, Trophy, Eye, MoreVertical, Edit, Archive, Plus, Lock, User, Trash2 } from 'lucide-react'
+import { Send, Loader2, CheckCircle, AlertCircle, Upload, FileText, Clipboard, Users, Calendar, Trophy, Eye, MoreVertical, Edit, Archive, Plus, Lock, User, Trash2, Share, Copy } from 'lucide-react'
 import { Quiz, QuizResult } from '../types'
+import { generateQuizId, generateQuizShareUrl, saveQuizToStorage, getAllQuizzesFromStorage } from '../utils/storage'
 
 export default function AdminPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -57,16 +58,12 @@ export default function AdminPage() {
     setLoginPassword('')
   }
 
-  const loadQuizzes = () => {
+  const loadQuizzes = async () => {
     try {
-      const storedQuizzes = localStorage.getItem('quizzes')
+      const allQuizzes = await getAllQuizzesFromStorage()
+      setQuizzes(allQuizzes)
+      
       const storedDoneQuizzes = localStorage.getItem('doneQuizzes')
-      
-      if (storedQuizzes) {
-        const quizzesData = JSON.parse(storedQuizzes)
-        setQuizzes(Array.isArray(quizzesData) ? quizzesData : [])
-      }
-      
       if (storedDoneQuizzes) {
         const doneQuizzesData = JSON.parse(storedDoneQuizzes)
         setDoneQuizzes(Array.isArray(doneQuizzesData) ? doneQuizzesData : [])
